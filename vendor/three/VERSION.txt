@@ -1,0 +1,1 @@
+three.js 0.186.1 (MIT) — vendored by scripts/vendor-three.mjs; bare 'three' imports rewritten to relative paths.

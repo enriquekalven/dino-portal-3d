@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%230f172a'/%3E%3Ctext x='32' y='44' font-size='34' text-anchor='middle'%3E%F0%9F%A6%96%3C/text%3E%3C/svg%3E" />
+  <title>DinoVerse 3D — Hyper-Realistic Prehistoric Portal &amp; Paleontology Lab</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <!-- 3D WebGL Canvas -->
+  <canvas id="dino-canvas" aria-label="Interactive 3D Dinosaur and Prehistoric Era Viewport"></canvas>
+
+  <!-- Floating 3D Anatomical Hotspot Pins Overlay -->
+  <div id="hotspot-overlay" class="hotspot-overlay" aria-live="polite"></div>
+
+  <!-- TOP NAVIGATION & ERA TIMELINE BAR -->
+  <header class="top-nav-bar" role="banner">
+    <div class="brand-cluster">
+      <div class="brand-logo" aria-hidden="true">🦖</div>
+      <div>
+        <h1 class="brand-title">DinoVerse 3D</h1>
+        <p class="brand-subtitle">Prehistoric Time Portal &amp; 3D Anatomy Lab</p>
+      </div>
+      <div id="passport-counter" class="passport-badge" title="Species Discovered in Your Paleo Passport">
+        🦴 1 / 74 Discovered
+      </div>
+    </div>
+
+    <!-- 6 Prehistoric Era Selector Pills -->
+    <nav id="era-tabs-nav" class="era-tabs-nav" aria-label="Prehistoric Geological Eras"></nav>
+
+    <!-- Interactive Lab & Simulator Modal Triggers -->
+    <div class="top-actions-cluster">
+      <button id="btn-open-atlas-modal" class="top-action-btn top-action-btn--atlas" type="button">
+        📖 Full Dino Atlas (74)
+      </button>
+      <button id="btn-open-drift-modal" class="top-action-btn" type="button">
+        🌍 Paleo-Earth Drift Lab
+      </button>
+      <button id="btn-open-impact-modal" class="top-action-btn top-action-btn--impact" type="button">
+        ☄️ Chicxulub Impact Lab
+      </button>
+      <button id="btn-open-quiz-modal" class="top-action-btn top-action-btn--quiz" type="button">
+        🎓 Dino Quiz
+      </button>
+    </div>
+  </header>
+
+  <!-- MAIN HUD LAYOUT -->
+  <main class="hud-layout">
+    <!-- LEFT PANEL: 74-SPECIES ROSTER, FILTERS & LIVE PALEO-EARTH TRACKER -->
+    <aside class="left-roster-panel" aria-label="Prehistoric Creature Roster and Filters">
+      <div class="roster-header">
+        <div class="roster-title-row">
+          <span id="roster-count-label" class="roster-count-label">🦕 74 Prehistoric Species</span>
+          <button id="btn-sidebar-atlas" type="button" class="roster-atlas-btn">📖 Open Full Atlas</button>
+        </div>
+        <div class="search-box">
+          <input
+            id="species-search-input"
+            type="search"
+            placeholder="Search 74 dinosaurs, flyers, sea reptiles..."
+            aria-label="Search prehistoric species"
+          />
+        </div>
+        <div id="diet-filter-bar" class="filter-pills-row" role="group" aria-label="Filter by diet or domain">
+          <button type="button" class="filter-pill active" data-filter="all">All (74)</button>
+          <button type="button" class="filter-pill" data-filter="Carnivore">🥩 Carnivores</button>
+          <button type="button" class="filter-pill" data-filter="Herbivore">🌿 Herbivores</button>
+          <button type="button" class="filter-pill" data-filter="Ocean">🌊 Marine &amp; River</button>
+          <button type="button" class="filter-pill" data-filter="Sky">🦅 Sky &amp; Birds</button>
+        </div>
+      </div>
+
+      <!-- Species Cards List -->
+      <div id="species-roster-list" class="species-roster-list" role="listbox" aria-label="Species list"></div>
+
+      <!-- Live Paleo-Earth Continental Drift Mini-Tracker -->
+      <section class="paleo-earth-card" aria-label="Live Paleo-Earth Continental Drift Tracker">
+        <div class="paleo-earth-header">
+          <span id="mini-earth-era-label" class="paleo-earth-title">🌍 Late Cretaceous (67 MYA)</span>
+          <span id="mini-earth-climate-badge" class="paleo-climate-pill">O₂ 30% • +20°C</span>
+        </div>
+        <canvas id="mini-drift-canvas" width="420" height="210" class="mini-drift-canvas"></canvas>
+        <p id="mini-earth-pin-caption" class="paleo-pin-caption">
+          🦴 Hell Creek Formation, Montana, USA
+        </p>
+      </section>
+    </aside>
+
+    <!-- CENTER HUD: MODE SWITCHER, BANNER & BOTTOM 3D CONTROL DOCK -->
+    <section class="center-viewport-hud" aria-label="3D Viewport Controls">
+      <!-- Dual 3D Mode Switcher + Era Summary Banner -->
+      <div class="center-top-stack">
+        <div class="mode-switcher-pill" role="tablist" aria-label="3D Experience Mode">
+          <button
+            id="mode-btn-lab"
+            type="button"
+            role="tab"
+            aria-selected="true"
+            class="mode-tab-btn active"
+          >
+            🔬 3D Dino Anatomy Lab
+          </button>
+          <button
+            id="mode-btn-portal"
+            type="button"
+            role="tab"
+            aria-selected="false"
+            class="mode-tab-btn"
+          >
+            ⏳ 3D Era Habitat Portal (6 Eras)
+          </button>
+        </div>
+
+        <div id="active-era-banner" class="era-context-banner">
+          <span id="banner-era-name" class="banner-era-name">Late Cretaceous (90–66 MYA)</span>
+          <span class="banner-sep">•</span>
+          <span id="banner-era-flora" class="banner-era-flora">Flowering forests, Western Interior Seaway &amp; apex predators</span>
+        </div>
+      </div>
+
+      <!-- Action Toast Notification -->
+      <div id="whatif-toast" class="whatif-toast hidden" role="status" aria-live="polite"></div>
+
+      <!-- Bottom 3D Interactive Controls Dock -->
+      <div class="bottom-control-dock">
+        <!-- Row 1: 3-Layer X-Ray Anatomy Toggle + Scale Comparator -->
+        <div class="dock-row">
+          <div class="anatomy-layer-group" role="group" aria-label="3D Anatomical X-Ray Layer">
+            <span class="dock-group-label">3D Layer:</span>
+            <button type="button" class="layer-btn active" data-layer="skin">
+              🦎 Skin &amp; Feathers
+            </button>
+            <button type="button" class="layer-btn" data-layer="muscle">
+              🫀 Muscles &amp; Beating Heart
+            </button>
+            <button type="button" class="layer-btn" data-layer="skeleton">
+              🦴 Fossil Skeleton
+            </button>
+          </div>
+
+          <button id="btn-toggle-scale" type="button" class="dock-action-btn" aria-pressed="false">
+            📏 Compare Size (Kid 1.4m &amp; Bus 11m)
+          </button>
+
+          <button id="btn-reset-camera" type="button" class="dock-icon-btn" title="Reset 3D Camera View">
+            🎯 Reset View
+          </button>
+        </div>
+
+        <!-- Row 2: Bio-Acoustic Synthesizer, Narration & Biomechanical Action Trigger -->
+        <div class="dock-row dock-row--actions">
+          <button id="btn-play-roar" type="button" class="bio-btn bio-btn--roar">
+            🔊 Roar / Vocal Call
+          </button>
+          <button id="btn-play-footsteps" type="button" class="bio-btn">
+            🐾 Seismic Footsteps
+          </button>
+          <button id="btn-narrate-story" type="button" class="bio-btn">
+            🗣️ Read Aloud for Kids
+          </button>
+          <button id="btn-trigger-whatif" type="button" class="bio-btn bio-btn--action">
+            ⚡ Unleash Apex Action
+          </button>
+        </div>
+
+        <!-- Row 3: Living Soundscape & Narrator Voice -->
+        <div class="dock-row dock-row--sound">
+          <button id="btn-toggle-ambience" type="button" class="dock-action-btn dock-action-btn--sound" aria-pressed="true"
+            title="Dinosaurs call, breathe and stomp on their own; the era's wind, insects and surf play in the background">
+            🔈 Living Soundscape: On
+          </button>
+          <label class="voice-picker" for="narrator-voice-select">
+            <span class="dock-group-label">Narrator voice:</span>
+            <select id="narrator-voice-select" aria-label="Narrator voice"></select>
+            <span id="narrator-voice-status" class="voice-status" aria-live="polite">Checking Chirp 3 HD…</span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- RIGHT PANEL: PALEONTOLOGY FIELD GUIDE, SCALE RULER & ANATOMY HOTSPOTS -->
+    <aside class="right-inspector-panel" aria-label="Dinosaur Paleontology Field Guide">
+      <div class="inspector-header">
+        <div class="inspector-badges-row">
+          <span id="insp-era-badge" class="era-chip">Late Cretaceous (68–66 MYA)</span>
+          <span id="insp-diet-badge" class="diet-chip">🥩 Carnivore</span>
+          <span id="insp-stance-badge" class="stance-chip">Bipedal</span>
+        </div>
+        <h2 id="insp-name" class="insp-title">Tyrannosaurus Rex</h2>
+        <div class="insp-taxonomy-row">
+          <em id="insp-scientific" class="insp-scientific">Tyrannosaurus rex</em>
+          <span class="Taxonomy-dot">•</span>
+          <span id="insp-pronunciation" class="insp-pronunciation">🔊 tye-RAN-oh-SORE-us REKS</span>
+        </div>
+        <p id="insp-meaning" class="insp-meaning">Meaning: "Tyrant Lizard King" • Clade: Theropoda</p>
+      </div>
+
+      <!-- Key Biomechanical Metrics Grid -->
+      <div class="metrics-grid">
+        <div class="metric-box">
+          <span class="metric-label">Length</span>
+          <strong id="metric-length" class="metric-val">12.3 m (40 ft)</strong>
+        </div>
+        <div class="metric-box">
+          <span class="metric-label">Hip/Head Height</span>
+          <strong id="metric-height" class="metric-val">4.0 m (13 ft)</strong>
+        </div>
+        <div class="metric-box">
+          <span class="metric-label">Body Mass</span>
+          <strong id="metric-weight" class="metric-val">8.8 tons</strong>
+        </div>
+        <div class="metric-box">
+          <span class="metric-label">Top Speed / Bite</span>
+          <strong id="metric-speed-bite" class="metric-val">27 km/h • 35,000 N</strong>
+        </div>
+      </div>
+
+      <!-- Visual 2D Kid & School Bus Scale Comparison Bar -->
+      <div class="scale-chart-card">
+        <div class="scale-chart-header">
+          <span class="scale-chart-title">📏 Size vs. 10-Yr-Old Kid (1.4m) &amp; School Bus (11m)</span>
+        </div>
+        <div id="scale-bars-container" class="scale-bars-container"></div>
+      </div>
+
+      <!-- Kid-Friendly Paleo Story -->
+      <div class="story-card">
+        <h3 class="section-heading">📖 How It Lived</h3>
+        <p id="insp-story" class="story-paragraph"></p>
+      </div>
+
+      <!-- Clickable 3D Anatomical Hotspots -->
+      <div class="hotspots-card">
+        <h3 class="section-heading">🔬 Clickable 3D Anatomy &amp; Fossil Hotspots</h3>
+        <div id="insp-hotspots-list" class="insp-hotspots-list"></div>
+      </div>
+
+      <!-- 3 Mind-Blowing Fun Facts -->
+      <div class="facts-card">
+        <h3 class="section-heading">💡 3 Mind-Blowing Paleo Facts</h3>
+        <ul id="insp-facts-list" class="facts-list"></ul>
+      </div>
+
+      <!-- Fossil Discovery Passport Box -->
+      <div class="discovery-card">
+        <h3 class="section-heading">⛏️ Where Were Its Fossils Found?</h3>
+        <p id="insp-discovery-text" class="discovery-text"></p>
+      </div>
+    </aside>
+  </main>
+
+  <!-- MODAL 1: PALEO-EARTH CONTINENTAL DRIFT LAB (285 MYA PANGAEA → TODAY) -->
+  <div id="drift-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="drift-modal-title">
+    <div class="modal-card modal-card--wide">
+      <div class="modal-header">
+        <div>
+          <h2 id="drift-modal-title" class="modal-title">🌍 Paleo-Earth Continental Drift &amp; Climate Time-Scrubber</h2>
+          <p class="modal-subtitle">Scrub from 285 Million Years Ago (Supercontinent Pangaea) to Today (0 MYA) to see how tectonic plates carried dinosaurs across the globe!</p>
+        </div>
+        <button id="btn-close-drift-modal" type="button" class="modal-close-btn" aria-label="Close Continental Drift Lab">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="drift-controls-row">
+          <label for="drift-ma-slider" class="drift-slider-label">
+            Geological Time: <strong id="drift-ma-readout">152 MYA (Late Jurassic)</strong>
+          </label>
+          <input id="drift-ma-slider" type="range" min="0" max="285" value="152" step="1" class="drift-slider" />
+          <div class="drift-preset-buttons">
+            <button type="button" class="preset-ma-btn" data-ma="280">280 MYA (Permian Pangaea)</button>
+            <button type="button" class="preset-ma-btn" data-ma="220">220 MYA (Triassic Dawn)</button>
+            <button type="button" class="preset-ma-btn" data-ma="152">152 MYA (Jurassic Rifting)</button>
+            <button type="button" class="preset-ma-btn" data-ma="95">95 MYA (Mid Cretaceous)</button>
+            <button type="button" class="preset-ma-btn" data-ma="67">67 MYA (Late Cretaceous)</button>
+            <button type="button" class="preset-ma-btn" data-ma="0">0 MYA (Today's 7 Continents)</button>
+          </div>
+        </div>
+        <canvas id="large-drift-canvas" width="960" height="460" class="large-drift-canvas"></canvas>
+        <p id="drift-explanation-text" class="drift-explanation-text"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 2: CHICXULUB ASTEROID IMPACT & AVIAN SURVIVAL SIMULATOR -->
+  <div id="impact-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="impact-modal-title">
+    <div class="modal-card modal-card--wide">
+      <div class="modal-header">
+        <div>
+          <h2 id="impact-modal-title" class="modal-title">☄️ The K-Pg Chicxulub Asteroid Impact &amp; Rise of Living Birds (66 MYA)</h2>
+          <p class="modal-subtitle">Scrub the timeline to simulate the 10-km Yucatán bolide impact and discover why small feathered avian dinosaurs survived to become today's 11,000+ bird species!</p>
+        </div>
+        <button id="btn-close-impact-modal" type="button" class="modal-close-btn" aria-label="Close Chicxulub Impact Simulator">✕</button>
+      </div>
+
+      <div class="modal-body">
+        <div class="drift-controls-row">
+          <label for="impact-stage-slider" class="drift-slider-label">
+            Impact Sequence: <strong id="impact-stage-readout">Stage 2: Zero Hour — 10km Bolide Blinding Flash &amp; 180km Crater</strong>
+          </label>
+          <input id="impact-stage-slider" type="range" min="0" max="100" value="35" step="1" class="drift-slider" />
+          <div class="drift-preset-buttons">
+            <button type="button" class="impact-preset-btn" data-val="8">1. T-Minus 10s (72,000 km/h Entry)</button>
+            <button type="button" class="impact-preset-btn" data-val="35">2. T = 0s (Yucatán Impact &amp; Shockwave)</button>
+            <button type="button" class="impact-preset-btn" data-val="65">3. T + 6 Months (Impact Winter &amp; Fern Spike)</button>
+            <button type="button" class="impact-preset-btn" data-val="95">4. 66 MYA → Today (Beaked Birds Survive!)</button>
+          </div>
+        </div>
+        <canvas id="impact-sim-canvas" width="960" height="420" class="large-drift-canvas"></canvas>
+        <p id="impact-explanation-text" class="drift-explanation-text"></p>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL 3: INTERACTIVE PALEO FIELD QUIZ -->
+  <div id="quiz-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="quiz-modal-title">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div>
+          <h2 id="quiz-modal-title" class="modal-title">🎓 Junior Paleontologist Field Quiz</h2>
+          <p class="modal-subtitle">Test your prehistoric knowledge across all 6 Eras!</p>
+        </div>
+        <button id="btn-close-quiz-modal" type="button" class="modal-close-btn" aria-label="Close Quiz">✕</button>
+      </div>
+      <div id="quiz-modal-body" class="modal-body"></div>
+    </div>
+  </div>
+
+  <!-- MODAL 4: FULL 74-SPECIES PREHISTORIC ENCYCLOPEDIA ATLAS -->
+  <div id="atlas-modal" class="modal-backdrop hidden" role="dialog" aria-modal="true" aria-labelledby="atlas-modal-title">
+    <div class="modal-card modal-card--atlas">
+      <div class="modal-header">
+        <div>
+          <h2 id="atlas-modal-title" class="modal-title">📖 Complete Prehistoric Encyclopedia Atlas (74 Species Across 6 Eras)</h2>
+          <p class="modal-subtitle">Browse every dinosaur, synapsid, pterosaur, marine reptile, and avian survivor from 298 MYA to 66 MYA — click any card to inspect its 3D anatomy &amp; hear its call!</p>
+        </div>
+        <button id="btn-close-atlas-modal" type="button" class="modal-close-btn" aria-label="Close Encyclopedia Atlas">✕</button>
+      </div>
+
+      <div class="atlas-toolbar">
+        <input
+          id="atlas-search-input"
+          type="search"
+          class="atlas-search-input"
+          placeholder="Search all 74 species by name, clade, formation, or country..."
+          aria-label="Search encyclopedia atlas"
+        />
+        <select id="atlas-era-select" class="atlas-select" aria-label="Filter by Geological Era">
+          <option value="all">All 6 Geological Eras (74)</option>
+          <option value="permian">1. Permian (298–252 MYA)</option>
+          <option value="triassic">2. Triassic (252–201 MYA)</option>
+          <option value="jurassic">3. Jurassic (201–145 MYA)</option>
+          <option value="early-cretaceous">4. Early &amp; Mid Cretaceous (145–90 MYA)</option>
+          <option value="late-cretaceous">5. Late Cretaceous (90–66 MYA)</option>
+          <option value="kpg-extinction">6. K-Pg &amp; Rise of Birds (66 MYA–Today)</option>
+        </select>
+        <select id="atlas-diet-select" class="atlas-select" aria-label="Filter by Diet or Domain">
+          <option value="all">All Diets &amp; Domains</option>
+          <option value="Carnivore">🥩 Carnivores &amp; Apex Predators</option>
+          <option value="Herbivore">🌿 Herbivores &amp; Omnivores</option>
+          <option value="Ocean">🌊 Marine &amp; Semi-Aquatic</option>
+          <option value="Sky">🦅 Pterosaurs &amp; Avian Flyers</option>
+        </select>
+        <select id="atlas-sort-select" class="atlas-select" aria-label="Sort Species">
+          <option value="timeline">⏳ Sort: Timeline (290 MYA → 56 MYA)</option>
+          <option value="size-desc">📏 Sort: Largest First (35m → 0.3m)</option>
+          <option value="name">🔤 Sort: Alphabetical (A → Z)</option>
+        </select>
+      </div>
+
+      <div id="atlas-grid-body" class="atlas-grid-body"></div>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>

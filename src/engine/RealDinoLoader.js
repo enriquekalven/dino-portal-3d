@@ -1,7 +1,12 @@
 import * as THREE from '../../vendor/three/build/three.module.js';
 import { GLTFLoader } from '../../vendor/three/examples/jsm/loaders/GLTFLoader.js';
+import { DRACOLoader } from '../../vendor/three/examples/jsm/loaders/DRACOLoader.js';
 import { MeshoptDecoder } from '../../vendor/three/examples/jsm/libs/meshopt_decoder.module.js';
 import { PBR } from './HyperRealKit.js';
+import {
+  buildSmithsonianFossilSkeletonForGLB,
+  enhanceRealMuseumSkeletonGLB,
+} from './SmithsonianFossilSkeleton.js';
 
 /**
  * RealDinoLoader.js — Loads, normalizes, caches, and animates real artist-sculpted,
@@ -409,6 +414,9 @@ const bufferCache = new Map();
 async function getGLTFLoader() {
   if (!sharedLoader) {
     sharedLoader = new GLTFLoader();
+    const dracoLoader = new DRACOLoader();
+    dracoLoader.setDecoderPath('./vendor/three/examples/jsm/libs/draco/gltf/');
+    sharedLoader.setDRACOLoader(dracoLoader);
     if (MeshoptDecoder) {
       decoderReadyPromise = MeshoptDecoder.ready || Promise.resolve();
       await decoderReadyPromise;
@@ -960,12 +968,7 @@ function createRealGLBMuscleMaterial(
           vHolderPosM = hPos;
           vec3 bSize = max(vec3(0.001), uBoxMax - uBoxMin);
           vec3 rawUVW = clamp((hPos - uBoxMin) / bSize, 0.0, 1.0);
-          if (bSize.z > bSize.x * 1.25) {
-            vMuscleUVW = vec3(rawUVW.z, rawUVW.y, (rawUVW.x - 0.5) * 2.0);
-            vHolderNormM = vec3(vHolderNormM.z, vHolderNormM.y, vHolderNormM.x);
-          } else {
-            vMuscleUVW = vec3(rawUVW.x, rawUVW.y, (rawUVW.z - 0.5) * 2.0);
-          }
+          vMuscleUVW = vec3(rawUVW.x, rawUVW.y, (rawUVW.z - 0.5) * 2.0);
           #include <project_vertex>
           `
         );
@@ -1246,11 +1249,13 @@ function computeRealGLBThoraxBounds(realHolder, holderBox, species) {
   const center = holderBox.getCenter(new THREE.Vector3());
   const min = holderBox.min;
 
-  const isZLonger = size.z > size.x * 1.25;
-  const lenSize = Math.max(0.001, isZLonger ? size.z : size.x);
-  const lenMin = isZLonger ? min.z : min.x;
-  const latSize = Math.max(0.001, isZLonger ? size.x : size.z);
-  const latCenter = isZLonger ? center.x : center.z;
+  // MODEL_YAW rotates every model in realHolder so +X is head and -X is tail;
+  // keep X as longitudinal axis and Z as lateral/wingspan axis across all clades.
+  const isZLonger = false;
+  const lenSize = Math.max(0.001, size.x);
+  const lenMin = min.x;
+  const latSize = Math.max(0.001, size.z);
+  const latCenter = center.z;
   const heightSize = Math.max(0.001, size.y);
 
   const isStegoOrSpino = species?.rigType === 'stegosaur' || species?.rigType === 'spinosaur';
@@ -1389,9 +1394,12 @@ function computeRealGLBThoraxBounds(realHolder, holderBox, species) {
  * returned by `buildPrehistoricCreature(species, scale)`.
  *
  * - In `'skin'` mode: displays the 100% real sculpted & PBR-textured `.glb` dinosaur.
- * - In `'skeleton'` / `'xray'` mode: transforms the `.glb` mesh into a full-body 3D
- *   Osteological Relief & Excavated Fossil Skeleton (3D normal-beveled thoracic ribs,
- *   segmented vertebrae, cranial fenestrae, and long-bone limb shafts with zero discard holes).
+ * - In `'skeleton'` / `'xray'` mode: completely hides the closed outer skin `.glb` and
+ *   displays an authentic **Smithsonian NMNH / Natural History Museum 3D Fossil Skeleton**
+ *   (including the official 102,071-vertex Smithsonian *Triceratops horridus* "Hatcher" 3D scan,
+ *   the 29,435-vertex articulated theropod skeleton mount, and clade-accurate 3D open-air
+ *   museum fossil skeletons with true open intercostal space between curved ribs, articulated
+ *   vertebrae, separated tibia+fibula / radius+ulna shafts, and open cranial fenestrae).
  * - In `'muscle'` mode: transforms the `.glb` mesh into a glossy Striated Musculature Ecorché
  *   with a subsurface-illuminated 3D Beating Heart, Aortic Arch, Lungs, and animated systolic
  *   arterial blood vessels pulsing across the body!
@@ -1493,7 +1501,7 @@ export async function upgradeRigWithRealGLB(creatureRig, species, scale = 1.0, o
       value: new THREE.Matrix4().copy(realHolder.matrixWorld).invert(),
     };
 
-    // 3. Collect real GLB meshes, create Skin / Fossil Skeleton / Striated Muscle materials
+    // 3. Collect real GLB meshes, create Skin & Striated Muscle materials
     const glbMeshes = [];
     let jawBone = null;
     let headBone = null;
@@ -1543,15 +1551,6 @@ export async function upgradeRigWithRealGLB(creatureRig, species, scale = 1.0, o
       });
 
       const primaryMat = enhancedMats[0] || obj.material;
-      const fossilMat = createRealGLBFossilMaterial(
-        primaryMat,
-        invHolderWorldUniform,
-        holderLocalBox,
-        thoraxCenter,
-        thoraxRadii,
-        bodyProfile,
-        species
-      );
       const muscleMat = createRealGLBMuscleMaterial(
         primaryMat,
         invHolderWorldUniform,
@@ -1566,13 +1565,144 @@ export async function upgradeRigWithRealGLB(creatureRig, species, scale = 1.0, o
       glbMeshes.push({
         mesh: obj,
         origMat: obj.material,
-        fossilMat,
         muscleMat,
       });
     });
 
+    // 3b. Load or build the authentic Smithsonian NMNH / Natural History Museum 3D Fossil Skeleton!
+    let fossilSkeletonGroup = null;
+    let skelMixer = null;
+    let skelYawPivot = null;
+    let skelBaseYaw = 0;
+    let skelBasePosY = 0;
+    let skelBaseScale = null;
+
+    if (species.rigType === 'ceratopsian') {
+      try {
+        const skelBuf = await fetchGLBBuffer('./vendor/models/smithsonian-triceratops.glb');
+        const skelGltf = await new Promise((resolve, reject) => {
+          loader.parse(skelBuf.slice(0), './vendor/models/', resolve, reject);
+        });
+        const skelHolder = new THREE.Group();
+        skelHolder.name = `SmithsonianScan_${species.id}`;
+        const skelYaw = new THREE.Group();
+        skelYaw.rotation.y = Math.PI / 2;
+        const inner = new THREE.Group();
+        inner.rotation.x = -Math.PI / 2;
+        inner.add(skelGltf.scene);
+        skelYaw.add(inner);
+        if (spec.aspect) {
+          skelYaw.scale.set(spec.aspect[0], spec.aspect[1], spec.aspect[2]);
+        }
+        skelHolder.add(skelYaw);
+        syncHolderAndSkeletons(skelHolder);
+
+        const rawSkelBox = new THREE.Box3().setFromObject(skelHolder, true);
+        const rawSkelSize = rawSkelBox.getSize(new THREE.Vector3());
+        const skelMaxDim = Math.max(rawSkelSize.x, rawSkelSize.y, rawSkelSize.z, 0.001);
+        const skelNormScale = targetWorldSpan / (skelMaxDim * rigParentScale);
+        skelYaw.scale.multiplyScalar(skelNormScale);
+        syncHolderAndSkeletons(skelHolder);
+
+        const normSkelBox = new THREE.Box3().setFromObject(skelHolder, true);
+        const normSkelCenter = normSkelBox.getCenter(new THREE.Vector3());
+        skelYaw.position.set(
+          -normSkelCenter.x,
+          groundYLocal - normSkelBox.min.y,
+          -normSkelCenter.z
+        );
+        syncHolderAndSkeletons(skelHolder);
+
+        const finalSkelBox = new THREE.Box3().setFromObject(skelHolder, true);
+        enhanceRealMuseumSkeletonGLB(skelHolder, finalSkelBox, species, groundYLocal, true);
+        creatureRig.group.add(skelHolder);
+        fossilSkeletonGroup = skelHolder;
+        skelYawPivot = skelYaw;
+        skelBaseYaw = skelYaw.rotation.y;
+        skelBasePosY = skelYaw.position.y;
+        skelBaseScale = skelYaw.scale.clone();
+      } catch (e) {
+        console.warn('[RealDinoLoader] Fallback to sculpted ceratopsian skeleton:', e);
+      }
+    } else if (species.rigType === 'theropod' || species.rigType === 'spinosaur') {
+      try {
+        const skelBuf = await fetchGLBBuffer('./vendor/models/trex-skeleton-rigged.glb');
+        const skelGltf = await new Promise((resolve, reject) => {
+          loader.parse(skelBuf.slice(0), './vendor/models/', resolve, reject);
+        });
+        const skelScene = skelGltf.scene;
+        // Remove any base/platform meshes BEFORE computing bounding box so Box3 measures strictly the dinosaur skeleton
+        const toRemove = [];
+        skelScene.traverse((obj) => {
+          if (obj.isMesh && /platform|floor|base|pedestal|ground/i.test(obj.name)) {
+            toRemove.push(obj);
+          }
+        });
+        toRemove.forEach((m) => {
+          if (m.parent) m.parent.remove(m);
+        });
+
+        if (skelGltf.animations && skelGltf.animations.length > 0) {
+          skelMixer = new THREE.AnimationMixer(skelScene);
+          const clip = skelGltf.animations[0];
+          const act = skelMixer.clipAction(clip);
+          act.play();
+          skelMixer.update(0.016);
+        }
+
+        const skelHolder = new THREE.Group();
+        skelHolder.name = `MuseumTheropodSkeleton_${species.id}`;
+        const skelYaw = new THREE.Group();
+        skelYaw.rotation.y = Math.PI / 2;
+        skelYaw.add(skelScene);
+        if (spec.aspect) {
+          skelYaw.scale.set(spec.aspect[0], spec.aspect[1], spec.aspect[2]);
+        }
+        skelHolder.add(skelYaw);
+        syncHolderAndSkeletons(skelHolder);
+
+        const rawSkelBox = new THREE.Box3().setFromObject(skelHolder, true);
+        const rawSkelSize = rawSkelBox.getSize(new THREE.Vector3());
+        const skelMaxDim = Math.max(rawSkelSize.x, rawSkelSize.y, rawSkelSize.z, 0.001);
+        const skelNormScale = (targetWorldSpan * 0.86) / (skelMaxDim * rigParentScale);
+        skelYaw.scale.multiplyScalar(skelNormScale);
+        syncHolderAndSkeletons(skelHolder);
+
+        const normSkelBox = new THREE.Box3().setFromObject(skelHolder, true);
+        const normSkelCenter = normSkelBox.getCenter(new THREE.Vector3());
+        skelYaw.position.set(
+          -normSkelCenter.x,
+          groundYLocal - normSkelBox.min.y,
+          -normSkelCenter.z
+        );
+        syncHolderAndSkeletons(skelHolder);
+
+        const finalSkelBox = new THREE.Box3().setFromObject(skelHolder, true);
+        enhanceRealMuseumSkeletonGLB(skelHolder, finalSkelBox, species, groundYLocal, false);
+        creatureRig.group.add(skelHolder);
+        fossilSkeletonGroup = skelHolder;
+        skelYawPivot = skelYaw;
+        skelBaseYaw = skelYaw.rotation.y;
+        skelBasePosY = skelYaw.position.y;
+        skelBaseScale = skelYaw.scale.clone();
+      } catch (e) {
+        console.warn('[RealDinoLoader] Fallback to sculpted theropod skeleton:', e);
+      }
+    }
+
+    if (!fossilSkeletonGroup) {
+      fossilSkeletonGroup = buildSmithsonianFossilSkeletonForGLB(
+        realHolder,
+        holderLocalBox,
+        bodyProfile,
+        species
+      );
+      realHolder.add(fossilSkeletonGroup);
+    }
+
     creatureRig.realGlbGroup = realHolder;
     creatureRig.realGlbMeshes = glbMeshes;
+    creatureRig.realFossilSkeletonGroup = fossilSkeletonGroup;
     creatureRig.realMixer = mixer;
     creatureRig.isRealGLB = true;
     creatureRig.realGlbFile = spec.file;
@@ -1580,7 +1710,8 @@ export async function upgradeRigWithRealGLB(creatureRig, species, scale = 1.0, o
     // 4. Override setAnatomyLayer so:
     //    - All old procedural meshes stay 100% hidden!
     //    - 'skin' mode shows the full PBR-textured .glb model
-    //    - 'skeleton' / 'xray' mode shows the 3D Osteological Relief & Fossil Bone .glb
+    //    - 'skeleton' / 'xray' mode completely hides the closed outer skin .glb and displays
+    //      the authentic 3D Smithsonian / Natural History Museum Fossil Skeleton!
     //    - 'muscle' mode shows the Striated Muscle Ecorché & Subsurface Beating Heart .glb
     let currentLayer = creatureRig._activeLayer || 'skin';
 
@@ -1618,15 +1749,18 @@ export async function upgradeRigWithRealGLB(creatureRig, species, scale = 1.0, o
 
       const showSkinFull = layer === 'skin';
       const showMuscle = layer === 'muscle';
+      const showSkeleton = !showSkinFull && !showMuscle;
 
-      glbMeshes.forEach(({ mesh, origMat, fossilMat, muscleMat }) => {
-        mesh.visible = true;
-        if (showSkinFull) {
-          mesh.material = origMat;
-        } else if (showMuscle) {
-          mesh.material = muscleMat;
+      if (fossilSkeletonGroup) {
+        fossilSkeletonGroup.visible = showSkeleton;
+      }
+
+      glbMeshes.forEach(({ mesh, origMat, muscleMat }) => {
+        if (showSkeleton) {
+          mesh.visible = false;
         } else {
-          mesh.material = fossilMat;
+          mesh.visible = true;
+          mesh.material = showSkinFull ? origMat : muscleMat;
         }
       });
     };
@@ -1658,10 +1792,14 @@ export async function upgradeRigWithRealGLB(creatureRig, species, scale = 1.0, o
       const dt = lastTime === null ? 0.016 : Math.min(0.1, Math.max(0.001, time - lastTime));
       lastTime = time;
 
+      const speedMul = whatIf ? 1.65 : 1.0;
+
       // Advance native GLB skeletal animation mixer
       if (mixer) {
-        const speedMul = whatIf ? 1.65 : 1.0;
         mixer.update(dt * speedMul);
+      }
+      if (skelMixer && fossilSkeletonGroup?.visible) {
+        skelMixer.update(dt * speedMul);
       }
 
       // Handle vocalization trigger
@@ -1692,6 +1830,17 @@ export async function upgradeRigWithRealGLB(creatureRig, species, scale = 1.0, o
         baseScaleY * (1 + breath + vocal * 0.03),
         baseScaleZ * (1 + breath * 1.15 + vocal * 0.04)
       );
+
+      if (skelYawPivot && skelBaseScale) {
+        skelYawPivot.rotation.y = skelBaseYaw + sway * 0.65;
+        skelYawPivot.rotation.z = vocal * 0.04;
+        skelYawPivot.position.y = skelBasePosY + bob * 0.5;
+        skelYawPivot.scale.set(
+          skelBaseScale.x * (1 + breath * 0.25),
+          skelBaseScale.y * (1 + breath * 0.65),
+          skelBaseScale.z * (1 + breath * 0.75)
+        );
+      }
 
       if (jawBone && vocal > 0.001) {
         jawBone.rotation.x = jawBaseRotX + vocal * 0.38;

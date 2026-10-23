@@ -57,7 +57,7 @@ const MODEL_YAW = {
   'spinosaurus-detailed.glb': HP,
   'spinosaurus.glb': HP,
   'stegosaurus.glb': HP,
-  'styxosaurus.glb': 0,
+  'styxosaurus.glb': PI,
   'therizinosaurus.glb': -HP,
   'triceratops.glb': HP,
   'tupandactylus.glb': HP,
@@ -1577,7 +1577,15 @@ export async function upgradeRigWithRealGLB(creatureRig, species, scale = 1.0, o
     let skelBasePosY = 0;
     let skelBaseScale = null;
 
-    if (species.rigType === 'ceratopsian') {
+    const isExactTriceratops = species.id === 'triceratops';
+    const isTyrannosaurid =
+      species.rigType === 'theropod' &&
+      (spec.file === 'tyrannosaurus-rex.glb' ||
+        /tyrannosaurus|tarbosaurus|gorgosaurus|albertosaurus|daspletosaurus|yutyrannus|qianzhousaurus/i.test(
+          species.id
+        ));
+
+    if (isExactTriceratops) {
       try {
         const skelBuf = await fetchGLBBuffer('./vendor/models/smithsonian-triceratops.glb');
         const skelGltf = await new Promise((resolve, reject) => {
@@ -1589,8 +1597,11 @@ export async function upgradeRigWithRealGLB(creatureRig, species, scale = 1.0, o
         skelYaw.rotation.y = Math.PI / 2;
         const inner = new THREE.Group();
         inner.rotation.x = -Math.PI / 2;
+        // Tilt Hatcher slightly upward around local X so its brow horns & frill align 1-to-1 with triceratops.glb
+        inner.rotation.y = 0;
         inner.add(skelGltf.scene);
         skelYaw.add(inner);
+        skelYaw.rotation.z = 0.14;
         if (spec.aspect) {
           skelYaw.scale.set(spec.aspect[0], spec.aspect[1], spec.aspect[2]);
         }
@@ -1624,7 +1635,7 @@ export async function upgradeRigWithRealGLB(creatureRig, species, scale = 1.0, o
       } catch (e) {
         console.warn('[RealDinoLoader] Fallback to sculpted ceratopsian skeleton:', e);
       }
-    } else if (species.rigType === 'theropod' || species.rigType === 'spinosaur') {
+    } else if (isTyrannosaurid) {
       try {
         const skelBuf = await fetchGLBBuffer('./vendor/models/trex-skeleton-rigged.glb');
         const skelGltf = await new Promise((resolve, reject) => {
@@ -1664,7 +1675,7 @@ export async function upgradeRigWithRealGLB(creatureRig, species, scale = 1.0, o
         const rawSkelBox = new THREE.Box3().setFromObject(skelHolder, true);
         const rawSkelSize = rawSkelBox.getSize(new THREE.Vector3());
         const skelMaxDim = Math.max(rawSkelSize.x, rawSkelSize.y, rawSkelSize.z, 0.001);
-        const skelNormScale = (targetWorldSpan * 0.86) / (skelMaxDim * rigParentScale);
+        const skelNormScale = (targetWorldSpan * 0.98) / (skelMaxDim * rigParentScale);
         skelYaw.scale.multiplyScalar(skelNormScale);
         syncHolderAndSkeletons(skelHolder);
 

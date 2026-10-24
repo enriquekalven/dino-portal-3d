@@ -43,6 +43,12 @@ const DARK_BACKDROP_FALLBACK_TINT = [0.02, 0.06, 0.1];
 const BLOOM_THRESHOLD = 0.82;
 const BLOOM_BACKDROP_MARGIN = 0.2;
 
+// Touch devices (phones/tablets): each era habitat pulls up to 4 multi-MB .glb creatures, so only the
+// era you are looking at and its direct neighbours are filled (all six at once is ~80 MB of models).
+const PORTAL_ERA_RADIUS_TOUCH = 1;
+// Two-finger pinch: orbit-distance change per pixel of finger spread (wheel is 0.38 per notch).
+const PINCH_ZOOM_PER_PX = 0.012;
+
 /** Linear-light luminance, matching the weights of three.js' GLSL luminance() used by the bloom pass. */
 function linearLuminance(color) {
   return 0.2126729 * color.r + 0.7151522 * color.g + 0.072175 * color.b;
@@ -50,6 +56,22 @@ function linearLuminance(color) {
 
 function normalizeBackdropTheme(theme) {
   return theme === 'light' || theme === 'dark' ? theme : DEFAULT_BACKDROP_THEME;
+}
+
+/** Adds every GPU-backed resource an object holds (geometry, materials, their textures, bone textures). */
+function collectGpuResources(obj, into) {
+  if (obj.geometry) into.add(obj.geometry);
+  if (obj.isSkinnedMesh && obj.skeleton) into.add(obj.skeleton);
+  const materials = Array.isArray(obj.material) ? obj.material : obj.material ? [obj.material] : [];
+  for (const material of materials) {
+    into.add(material);
+    for (const value of Object.values(material)) {
+      if (value && value.isTexture) into.add(value);
+    }
+    for (const uniform of Object.values(material.uniforms || {})) {
+      if (uniform && uniform.value && uniform.value.isTexture) into.add(uniform.value);
+    }
+  }
 }
 
 export class DinoWorldEngine {
@@ -60,6 +82,10 @@ export class DinoWorldEngine {
     this.callbacks = callbacks;
     this.backdropTheme = normalizeBackdropTheme(options.backdropTheme);
     this._backdropKey = null;
+    // Touch-primary device (phone/tablet): lighter shadows and on-demand era habitats to stay in mobile memory budgets.
+    this.isTouchDevice =
+      typeof window.matchMedia === 'function' && window.matchMedia('(pointer: coarse)').matches;
+    this._fitWasPortrait = window.innerWidth < window.innerHeight;
 
     this.scene = new THREE.Scene();
     this.scene.fog = new THREE.FogExp2(0x040914, 0.012);
@@ -154,12 +180,13 @@ export class DinoWorldEngine {
     this.hemiLight = new THREE.HemisphereLight(0xdbeafe, 0x2a241c, 0.32);
     this.scene.add(this.hemiLight);
 
-    // Warm key sun with high-resolution soft shadows
+    // Warm key sun with high-resolution soft shadows (1024px on phones/tablets: 4x less GPU memory)
     this.sunLight = new THREE.DirectionalLight(0xfff1dc, 2.7);
     this.sunLight.position.set(8, 14, 9);
     this.sunLight.castShadow = true;
-    this.sunLight.shadow.mapSize.width = 2048;
-    this.sunLight.shadow.mapSize.height = 2048;
+    const shadowMapSize = this.isTouchDevice ? 1024 : 2048;
+    this.sunLight.shadow.mapSize.width = shadowMapSize;
+    this.sunLight.shadow.mapSize.height = shadowMapSize;
     const d = 6.5;
     this.sunLight.shadow.camera.left = -d;
     this.sunLight.shadow.camera.right = d;
@@ -336,10 +363,17 @@ export class DinoWorldEngine {
     });
   }
 
-  /** Spawns deferred diorama creatures one at a time during idle frames, active era first. */
+  /**
+   * Spawns deferred diorama creatures one at a time during idle frames, active era first.
+   * Desktop fills all six eras in the background; touch devices only fill eras within
+   * PORTAL_ERA_RADIUS_TOUCH of the active one (re-run as the visitor moves through the portal).
+   */
   _schedulePortalPopulation() {
+    this._cancelPortalPopulation();
+    const maxEraDistance = this.isTouchDevice ? PORTAL_ERA_RADIUS_TOUCH : Infinity;
     this._populationQueue = this.eraDioramas
       .map((dio, idx) => ({ dio, idx }))
+      .filter(({ idx }) => Math.abs(idx - this.activeEraIndex) <= maxEraDistance)
       .sort((a, b) => Math.abs(a.idx - this.activeEraIndex) - Math.abs(b.idx - this.activeEraIndex));
 
     const step = () => {
@@ -356,19 +390,31 @@ export class DinoWorldEngine {
     };
     const schedule = () => {
       if (typeof window.requestIdleCallback === 'function') {
-        this._populationHandle = window.requestIdleCallback(step, { timeout: 400 });
+        this._populationHandle = { idle: window.requestIdleCallback(step, { timeout: 400 }) };
       } else {
-        this._populationHandle = window.setTimeout(step, 40);
+        this._populationHandle = { timer: window.setTimeout(step, 40) };
       }
     };
     schedule();
+  }
+
+  _cancelPortalPopulation() {
+    const handle = this._populationHandle;
+    if (!handle) return;
+    if (handle.idle !== undefined && typeof window.cancelIdleCallback === 'function') {
+      window.cancelIdleCallback(handle.idle);
+    }
+    if (handle.timer !== undefined) window.clearTimeout(handle.timer);
+    this._populationHandle = null;
   }
 
   init() {
     this.selectSpecies(this.activeSpecies.id);
     this.setViewMode('lab');
     this._animate();
-    this._schedulePortalPopulation();
+    // Phones/tablets wait until the Era Habitat Portal is opened (see setViewMode) instead of
+    // downloading every habitat creature while the visitor is looking at one dinosaur.
+    if (!this.isTouchDevice) this._schedulePortalPopulation();
     if (this.callbacks.onReady) {
       this.callbacks.onReady();
     }
@@ -385,6 +431,7 @@ export class DinoWorldEngine {
     } else {
       this.orbitDistance = 9.2;
       this.targetFocusOffset.set(0, 0, 0);
+      if (this.isTouchDevice) this._schedulePortalPopulation();
     }
 
     if (this.callbacks.onModeChange) {
@@ -409,6 +456,7 @@ export class DinoWorldEngine {
     }
 
     // Rebuild 3D dinosaur on turntable
+    const replacedObjects = [...this.turntableMount.children];
     while (this.turntableMount.children.length > 0) {
       this.turntableMount.remove(this.turntableMount.children[0]);
     }
@@ -433,11 +481,36 @@ export class DinoWorldEngine {
     this.activeScaleGroup.visible = this.showScaleComparator;
     this.turntableMount.add(this.activeScaleGroup);
 
+    // Free the previous specimen only now, so anything it shares with the new one stays alive.
+    this._disposeReplacedObjects(replacedObjects);
+
     this._fitCameraToActiveRig();
 
     if (this.callbacks.onSpeciesChange) {
       this.callbacks.onSpeciesChange(found, this.eras[this.activeEraIndex]);
     }
+  }
+
+  /**
+   * Releases the GPU memory (geometry, materials, textures, bone textures) of objects that just left
+   * the turntable. Every pick parses a fresh copy of its .glb, so without this each dinosaur a kid
+   * taps stays on the GPU until a phone browser kills the tab. Resources the live scene still uses
+   * (shared procedural materials, habitat creatures, PMREM environment maps) are left untouched;
+   * three.js re-uploads any shared resource that a later creature uses again.
+   */
+  _disposeReplacedObjects(objects) {
+    if (!objects.length) return;
+    const inUse = new Set();
+    this.scene.traverse((obj) => collectGpuResources(obj, inUse));
+    if (this.scene.environment) inUse.add(this.scene.environment);
+    if (this.scene.background && this.scene.background.isTexture) inUse.add(this.scene.background);
+    this.envCache.forEach((texture) => inUse.add(texture));
+
+    const garbage = new Set();
+    objects.forEach((root) => root.traverse((obj) => collectGpuResources(obj, garbage)));
+    garbage.forEach((resource) => {
+      if (!inUse.has(resource) && typeof resource.dispose === 'function') resource.dispose();
+    });
   }
 
   /** Lip-sync: opens the jaw / throws the head of the creature that is calling. */
@@ -479,7 +552,10 @@ export class DinoWorldEngine {
     const hFov = 2 * Math.atan(Math.tan(vFov / 2) * this.camera.aspect);
     const fitFov = Math.min(vFov, hFov);
     const dist = (sphere.radius * 1.12) / Math.sin(fitFov / 2);
-    this.labFitDistance = THREE.MathUtils.clamp(dist, 2.6, 11.0);
+    // Portrait phones see a much narrower horizontal field, so long necks and tails need a longer
+    // pull-back than the desktop cap of 11 (aspect 0.59 on an iPhone allows ~18.7).
+    const maxFitDistance = this.camera.aspect < 1 ? 11.0 / Math.max(this.camera.aspect, 0.45) : 11.0;
+    this.labFitDistance = THREE.MathUtils.clamp(dist, 2.6, maxFitDistance);
     this.labFitCenter = new THREE.Vector3(0, center.y, 0);
     this.targetFocusOffset.copy(this.labFitCenter);
     if (this.viewMode === 'lab') {
@@ -501,6 +577,11 @@ export class DinoWorldEngine {
       }
     } else if (this.callbacks.onEraChange) {
       this.callbacks.onEraChange(this.eras[idx]);
+    }
+
+    // Touch devices fill habitats on demand: the new era and its neighbours come next.
+    if (this.isTouchDevice && this.viewMode === 'portal') {
+      this._schedulePortalPopulation();
     }
   }
 
@@ -614,16 +695,48 @@ export class DinoWorldEngine {
       this.renderer.setSize(w, h);
       this.composer.setSize(w, h);
       this.bloomPass.resolution.set(w, h);
+      // Rotating a phone/tablet swaps portrait <-> landscape framing; re-fit the specimen (only on an
+      // actual flip, so the on-screen keyboard or a toolbar resize never resets the visitor's zoom).
+      const portrait = w < h;
+      if (this.isTouchDevice && this.viewMode === 'lab' && portrait !== this._fitWasPortrait) {
+        this._fitWasPortrait = portrait;
+        this._fitCameraToActiveRig();
+      }
     });
 
-    this.canvas.addEventListener('pointerdown', (e) => {
+    // One pointer orbits the camera; two touch pointers pinch-zoom (mouse/pen behave exactly as before).
+    const activePointers = new Map();
+    let pinchGap = 0;
+    const currentPinchGap = () => {
+      const [a, b] = activePointers.values();
+      return Math.hypot(a.x - b.x, a.y - b.y);
+    };
+    const startOrbitFrom = (point) => {
       this.isDragging = true;
-      this.dragStart.x = e.clientX;
-      this.dragStart.y = e.clientY;
+      this.dragStart.x = point.x;
+      this.dragStart.y = point.y;
+    };
+
+    this.canvas.addEventListener('pointerdown', (e) => {
+      activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
       this.canvas.setPointerCapture(e.pointerId);
+      if (activePointers.size === 1) {
+        startOrbitFrom({ x: e.clientX, y: e.clientY });
+      } else if (activePointers.size === 2) {
+        this.isDragging = false;
+        pinchGap = currentPinchGap();
+      }
     });
 
     this.canvas.addEventListener('pointermove', (e) => {
+      if (!activePointers.has(e.pointerId)) return;
+      activePointers.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (activePointers.size === 2) {
+        const gap = currentPinchGap();
+        if (pinchGap > 0) this.zoomCamera((pinchGap - gap) * PINCH_ZOOM_PER_PX);
+        pinchGap = gap;
+        return;
+      }
       if (!this.isDragging) return;
       const dx = e.clientX - this.dragStart.x;
       const dy = e.clientY - this.dragStart.y;
@@ -633,11 +746,17 @@ export class DinoWorldEngine {
       this.orbitPitch = Math.max(-0.45, Math.min(1.05, this.orbitPitch + dy * 0.0055));
     });
 
-    const endDrag = () => {
-      this.isDragging = false;
+    const endPointer = (e) => {
+      activePointers.delete(e.pointerId);
+      pinchGap = 0;
+      if (activePointers.size === 1) {
+        startOrbitFrom(activePointers.values().next().value); // keep orbiting with the remaining finger
+      } else if (activePointers.size === 0) {
+        this.isDragging = false;
+      }
     };
-    this.canvas.addEventListener('pointerup', endDrag);
-    this.canvas.addEventListener('pointercancel', endDrag);
+    this.canvas.addEventListener('pointerup', endPointer);
+    this.canvas.addEventListener('pointercancel', endPointer);
 
     window.addEventListener(
       'wheel',

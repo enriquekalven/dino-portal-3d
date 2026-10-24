@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%230f172a'/%3E%3Ctext x='32' y='44' font-size='34' text-anchor='middle'%3E%F0%9F%A6%96%3C/text%3E%3C/svg%3E" />
   <title>DinoVerse 3D — Hyper-Realistic Prehistoric Portal &amp; Paleontology Lab</title>
   <script src="./src/backdrop-boot.js"></script>
@@ -24,43 +24,50 @@
         <p class="brand-subtitle">Prehistoric Time Portal &amp; 3D Anatomy Lab</p>
       </div>
       <div id="passport-counter" class="passport-badge" title="Species Discovered in Your Paleo Passport">
-        🦴 1 / 74 Discovered
+        🦴 1 / 74<span class="lbl-long"> Discovered</span>
       </div>
     </div>
 
-    <!-- 6 Prehistoric Era Selector Pills -->
-    <nav id="era-tabs-nav" class="era-tabs-nav" aria-label="Prehistoric Geological Eras"></nav>
+    <!-- Era pills + lab buttons: one sideways-scrolling strip on phones; plain flex items on desktop -->
+    <div class="top-scroll-strip">
+      <!-- 6 Prehistoric Era Selector Pills -->
+      <nav id="era-tabs-nav" class="era-tabs-nav" aria-label="Prehistoric Geological Eras"></nav>
 
-    <!-- Interactive Lab & Simulator Modal Triggers -->
-    <div class="top-actions-cluster">
-      <button id="btn-open-atlas-modal" class="top-action-btn top-action-btn--atlas" type="button">
-        📖 Full Dino Atlas (74)
-      </button>
-      <button id="btn-open-drift-modal" class="top-action-btn" type="button">
-        🌍 Paleo-Earth Drift Lab
-      </button>
-      <button id="btn-open-impact-modal" class="top-action-btn top-action-btn--impact" type="button">
-        ☄️ Chicxulub Impact Lab
-      </button>
-      <button id="btn-open-quiz-modal" class="top-action-btn top-action-btn--quiz" type="button">
-        🎓 Dino Quiz
-      </button>
-      <button
-        id="btn-toggle-backdrop"
-        class="top-action-btn top-action-btn--backdrop"
-        type="button"
-        aria-label="Switch to dark 3D backdrop"
-        title="Switch to dark 3D backdrop"
-      >
-        🌙
-      </button>
+      <!-- Interactive Lab & Simulator Modal Triggers -->
+      <div class="top-actions-cluster">
+        <button id="btn-open-atlas-modal" class="top-action-btn top-action-btn--atlas" type="button">
+          📖 <span class="lbl-long">Full Dino </span>Atlas (<span id="atlas-count">74</span>)
+        </button>
+        <button id="btn-open-drift-modal" class="top-action-btn" type="button">
+          🌍 <span class="lbl-long">Paleo-Earth </span>Drift Lab
+        </button>
+        <button id="btn-open-impact-modal" class="top-action-btn top-action-btn--impact" type="button">
+          ☄️ <span class="lbl-long">Chicxulub </span>Impact Lab
+        </button>
+        <button id="btn-open-quiz-modal" class="top-action-btn top-action-btn--quiz" type="button">
+          🎓 Dino Quiz
+        </button>
+        <button
+          id="btn-toggle-backdrop"
+          class="top-action-btn top-action-btn--backdrop"
+          type="button"
+          aria-label="Switch to dark 3D backdrop"
+          title="Switch to dark 3D backdrop"
+        >
+          🌙
+        </button>
+      </div>
     </div>
   </header>
 
   <!-- MAIN HUD LAYOUT -->
   <main class="hud-layout">
     <!-- LEFT PANEL: 74-SPECIES ROSTER, FILTERS & LIVE PALEO-EARTH TRACKER -->
-    <aside class="left-roster-panel" aria-label="Prehistoric Creature Roster and Filters">
+    <aside id="roster-panel" class="left-roster-panel" aria-label="Prehistoric Creature Roster and Filters">
+      <div class="sheet-header">
+        <span class="sheet-title">🦕 Pick a creature</span>
+        <button type="button" class="sheet-close-btn" data-close-sheet aria-label="Close species list">✕</button>
+      </div>
       <div class="roster-header">
         <div class="roster-title-row">
           <span id="roster-count-label" class="roster-count-label">🦕 74 Prehistoric Species</span>
@@ -111,7 +118,7 @@
             aria-selected="true"
             class="mode-tab-btn active"
           >
-            🔬 3D Dino Anatomy Lab
+            🔬 <span class="lbl-long">3D Dino </span>Anatomy Lab
           </button>
           <button
             id="mode-btn-portal"
@@ -120,7 +127,7 @@
             aria-selected="false"
             class="mode-tab-btn"
           >
-            ⏳ 3D Era Habitat Portal (6 Eras)
+            ⏳ <span class="lbl-long">3D </span>Era <span class="lbl-long">Habitat </span>Portal<span class="lbl-long"> (6 Eras)</span>
           </button>
         </div>
 
@@ -131,7 +138,7 @@
         </div>
       </div>
 
-      <!-- Action Toast Notification -->
+      <!-- Action Toast Notification (tap to dismiss) -->
       <div id="whatif-toast" class="whatif-toast hidden" role="status" aria-live="polite"></div>
 
       <!-- Bottom 3D Interactive Controls Dock -->
@@ -141,18 +148,18 @@
           <div class="anatomy-layer-group" role="group" aria-label="3D Anatomical X-Ray Layer">
             <span class="dock-group-label">3D Layer:</span>
             <button type="button" class="layer-btn active" data-layer="skin">
-              🦎 Skin &amp; Feathers
+              🦎 Skin<span class="lbl-long"> &amp; Feathers</span>
             </button>
             <button type="button" class="layer-btn" data-layer="muscle">
-              🫀 Muscles &amp; Beating Heart
+              🫀 Muscles<span class="lbl-long"> &amp; Beating Heart</span>
             </button>
             <button type="button" class="layer-btn" data-layer="skeleton">
-              🦴 Fossil Skeleton
+              🦴 <span class="lbl-long">Fossil </span>Skeleton
             </button>
           </div>
 
           <button id="btn-toggle-scale" type="button" class="dock-action-btn" aria-pressed="false">
-            📏 Compare Size (Kid 1.4m &amp; Bus 11m)
+            📏 Compare Size<span class="lbl-long"> (Kid 1.4m &amp; Bus 11m)</span>
           </button>
 
           <button id="btn-reset-camera" type="button" class="dock-icon-btn" title="Reset 3D Camera View">
@@ -160,39 +167,56 @@
           </button>
         </div>
 
-        <!-- Row 2: Bio-Acoustic Synthesizer, Narration & Biomechanical Action Trigger -->
-        <div class="dock-row dock-row--actions">
-          <button id="btn-play-roar" type="button" class="bio-btn bio-btn--roar">
-            🔊 Roar / Vocal Call
-          </button>
-          <button id="btn-play-footsteps" type="button" class="bio-btn">
-            🐾 Seismic Footsteps
-          </button>
-          <button id="btn-narrate-story" type="button" class="bio-btn">
-            🗣️ Read Aloud for Kids
-          </button>
-          <button id="btn-trigger-whatif" type="button" class="bio-btn bio-btn--action">
-            ⚡ Unleash Apex Action
-          </button>
-        </div>
+        <!-- Rows 2 + 3 share one sideways-scrolling row on phones (display: contents on desktop) -->
+        <div class="dock-scroll">
+          <!-- Row 2: Bio-Acoustic Synthesizer, Narration & Biomechanical Action Trigger -->
+          <div class="dock-row dock-row--actions">
+            <button id="btn-play-roar" type="button" class="bio-btn bio-btn--roar">
+              🔊 Roar<span class="lbl-long"> / Vocal Call</span>
+            </button>
+            <button id="btn-play-footsteps" type="button" class="bio-btn">
+              🐾 <span class="lbl-long">Seismic </span>Footsteps
+            </button>
+            <button id="btn-narrate-story" type="button" class="bio-btn">
+              🗣️ Read Aloud for Kids
+            </button>
+            <button id="btn-trigger-whatif" type="button" class="bio-btn bio-btn--action">
+              ⚡ Unleash Apex Action
+            </button>
+          </div>
 
-        <!-- Row 3: Living Soundscape & Narrator Voice -->
-        <div class="dock-row dock-row--sound">
-          <button id="btn-toggle-ambience" type="button" class="dock-action-btn dock-action-btn--sound" aria-pressed="true"
-            title="Dinosaurs call, breathe and stomp on their own; the era's wind, insects and surf play in the background">
-            🔈 Living Soundscape: On
-          </button>
-          <label class="voice-picker" for="narrator-voice-select">
-            <span class="dock-group-label">Narrator voice:</span>
-            <select id="narrator-voice-select" aria-label="Narrator voice"></select>
-            <span id="narrator-voice-status" class="voice-status" aria-live="polite">Checking Chirp 3 HD…</span>
-          </label>
+          <!-- Row 3: Living Soundscape & Narrator Voice -->
+          <div class="dock-row dock-row--sound">
+            <button id="btn-toggle-ambience" type="button" class="dock-action-btn dock-action-btn--sound" aria-pressed="true"
+              title="Dinosaurs call, breathe and stomp on their own; the era's wind, insects and surf play in the background">
+              🔈 Living Soundscape: On
+            </button>
+            <label class="voice-picker" for="narrator-voice-select">
+              <span class="dock-group-label">Narrator voice:</span>
+              <select id="narrator-voice-select" aria-label="Narrator voice"></select>
+              <span id="narrator-voice-status" class="voice-status" aria-live="polite">Checking Chirp 3 HD…</span>
+            </label>
+          </div>
         </div>
       </div>
+
+      <!-- Phones & tablets only: bottom tab bar that opens the species list / field guide as sheets -->
+      <nav class="mobile-tabbar" aria-label="Species list and field guide">
+        <button id="btn-mobile-sheet-roster" type="button" class="mobile-tab-btn" aria-controls="roster-panel" aria-expanded="false">
+          🦕 Species
+        </button>
+        <button id="btn-mobile-sheet-guide" type="button" class="mobile-tab-btn" aria-controls="inspector-panel" aria-expanded="false">
+          📖 Field Guide
+        </button>
+      </nav>
     </section>
 
     <!-- RIGHT PANEL: PALEONTOLOGY FIELD GUIDE, SCALE RULER & ANATOMY HOTSPOTS -->
-    <aside class="right-inspector-panel" aria-label="Dinosaur Paleontology Field Guide">
+    <aside id="inspector-panel" class="right-inspector-panel" aria-label="Dinosaur Paleontology Field Guide">
+      <div class="sheet-header">
+        <span class="sheet-title">📖 Field Guide</span>
+        <button type="button" class="sheet-close-btn" data-close-sheet aria-label="Close field guide">✕</button>
+      </div>
       <div class="inspector-header">
         <div class="inspector-badges-row">
           <span id="insp-era-badge" class="era-chip">Late Cretaceous (68–66 MYA)</span>

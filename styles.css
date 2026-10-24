@@ -38,10 +38,13 @@ body {
   width: 100%;
   height: 100%;
   overflow: hidden;
+  overscroll-behavior: none; /* no pull-to-refresh / rubber-banding while orbiting on phones */
   background-color: var(--bg-deep);
   color: var(--text-primary);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
 }
 
 #dino-canvas {
@@ -51,10 +54,19 @@ body {
   height: 100vh;
   z-index: 1;
   cursor: grab;
+  touch-action: none; /* fingers orbit (1) and pinch-zoom (2) the 3D view instead of panning the page */
 }
 
 #dino-canvas:active {
   cursor: grabbing;
+}
+
+/* No 300ms double-tap-zoom delay on any control */
+button,
+select,
+input,
+label {
+  touch-action: manipulation;
 }
 
 button:focus-visible,
@@ -79,6 +91,7 @@ input:focus-visible {
   gap: 12px;
   padding: 0 16px;
   background: rgba(6, 12, 24, 0.92);
+  -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--border-subtle);
 }
@@ -238,10 +251,12 @@ input:focus-visible {
 .right-inspector-panel {
   pointer-events: auto;
   background: var(--surface-glass);
+  -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
   display: flex;
   flex-direction: column;
   height: calc(100vh - 62px);
+  height: calc(100dvh - 62px); /* Safari toolbars: size to the visible viewport */
   overflow: hidden;
 }
 
@@ -489,6 +504,7 @@ input:focus-visible {
 .bottom-control-dock {
   pointer-events: auto;
   background: rgba(8, 15, 28, 0.92);
+  -webkit-backdrop-filter: blur(14px);
   backdrop-filter: blur(14px);
   border: 1px solid var(--border-subtle);
   border-radius: var(--radius-lg);
@@ -895,6 +911,7 @@ input:focus-visible {
   inset: 0;
   z-index: 50;
   background: rgba(2, 6, 16, 0.84);
+  -webkit-backdrop-filter: blur(8px);
   backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
@@ -1209,14 +1226,638 @@ input:focus-visible {
   }
 }
 
-@media (max-width: 860px) {
-  .hud-layout {
-    grid-template-columns: 1fr;
-    overflow-y: auto;
+/* -------------------------------------------------------------------------- */
+/* RESPONSIVE BUILDING BLOCKS (no visual change on desktop)                   */
+/* -------------------------------------------------------------------------- */
+/* These wrappers only form their own box on phones/tablets; on desktop their children stay
+   direct flex items of the header / dock exactly as before. */
+.top-scroll-strip,
+.dock-scroll {
+  display: contents;
+}
+
+/* Phone/tablet-only chrome */
+.sheet-header,
+.mobile-tabbar {
+  display: none;
+}
+
+/* iOS Safari zooms the whole page into any focused field smaller than 16px */
+@media (pointer: coarse) {
+  #species-search-input,
+  .atlas-search-input,
+  .atlas-select,
+  .voice-picker select {
+    font-size: 16px;
   }
+}
+
+/* Laptops 1025-1366px: the full-length header labels pushed Quiz and the backdrop toggle off-screen */
+@media (min-width: 1025px) and (max-width: 1366px) {
+  .brand-subtitle {
+    display: none;
+  }
+  .passport-badge .lbl-long,
+  .top-actions-cluster .lbl-long {
+    display: none;
+  }
+}
+
+/* -------------------------------------------------------------------------- */
+/* PHONES & TABLETS (<= 1024px): full-screen 3D, bottom sheets, scroll rows   */
+/* Must match SHEET_LAYOUT_QUERY in src/main.js.                              */
+/* -------------------------------------------------------------------------- */
+@media (max-width: 1024px) {
+  :root {
+    --m-safe-top: env(safe-area-inset-top, 0px);
+    --m-safe-right: env(safe-area-inset-right, 0px);
+    --m-safe-bottom: env(safe-area-inset-bottom, 0px);
+    --m-safe-left: env(safe-area-inset-left, 0px);
+    --m-bar-row: 52px;
+    --m-top: calc(var(--m-bar-row) + var(--m-safe-top));
+    --m-tabbar: 52px;
+    --m-bottom: calc(var(--m-tabbar) + var(--m-safe-bottom));
+  }
+
+  .lbl-long {
+    display: none;
+  }
+
+  /* Header: brand + one sideways-scrolling strip (lab buttons first, then era pills).
+     Blur is dropped on touch screens: it re-blurs the 3D frame every frame for little visual gain. */
+  .top-nav-bar {
+    height: var(--m-top);
+    gap: 10px;
+    padding: var(--m-safe-top) calc(10px + var(--m-safe-right)) 0 calc(10px + var(--m-safe-left));
+    background: rgba(6, 12, 24, 0.96);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .brand-cluster {
+    gap: 8px;
+    min-width: 0;
+  }
+
+  .brand-logo {
+    width: 34px;
+    height: 34px;
+    font-size: 1.2rem;
+  }
+
+  .brand-title {
+    font-size: 0.98rem;
+    white-space: nowrap;
+  }
+
+  .brand-subtitle {
+    display: none;
+  }
+
+  .passport-badge {
+    margin-left: 2px;
+    padding: 4px 8px;
+    white-space: nowrap;
+  }
+
+  .top-scroll-strip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex: 1 1 auto;
+    min-width: 0;
+    height: var(--m-bar-row);
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .top-scroll-strip::-webkit-scrollbar {
+    display: none;
+  }
+
+  .top-actions-cluster {
+    order: -1;
+  }
+
+  .era-tabs-nav {
+    flex-shrink: 0;
+    overflow: visible;
+    padding: 0;
+  }
+
+  .top-action-btn,
+  .era-tab-btn {
+    flex-shrink: 0;
+    min-height: 38px;
+  }
+
+  .era-tab-btn {
+    justify-content: center;
+  }
+
+  .top-action-btn--backdrop {
+    align-self: auto;
+    min-width: 42px;
+  }
+
+  /* HUD: every control floats over a full-screen 3D view */
+  .hud-layout {
+    top: 0;
+    display: block;
+    overflow: visible;
+  }
+
+  .center-viewport-hud {
+    display: block;
+    padding: 0;
+  }
+
+  /* Mode switcher + era name: one compact row under the header */
+  .center-top-stack {
+    position: fixed;
+    top: calc(var(--m-top) + 8px);
+    left: calc(8px + var(--m-safe-left));
+    right: calc(8px + var(--m-safe-right));
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 6px;
+    pointer-events: none; /* gaps between the pills keep orbiting the dinosaur */
+  }
+
+  .mode-switcher-pill,
+  .era-context-banner {
+    pointer-events: auto;
+  }
+
+  .mode-tab-btn {
+    min-height: 36px;
+    padding: 6px 12px;
+  }
+
+  .era-context-banner {
+    min-height: 42px;
+    padding: 6px 12px;
+  }
+
+  .banner-sep,
+  .banner-era-flora {
+    display: none;
+  }
+
+  /* Captions sit under the mode row; a tap dismisses them */
+  .whatif-toast {
+    position: fixed;
+    z-index: 4;
+    top: calc(var(--m-top) + 58px);
+    left: calc(10px + var(--m-safe-left));
+    right: calc(10px + var(--m-safe-right));
+    max-width: 560px;
+    max-height: 28vh;
+    margin: 0 auto;
+    overflow-y: auto;
+    font-size: 0.8rem;
+    cursor: pointer;
+  }
+
+  /* Bottom dock: rows of large buttons that scroll sideways, above the tab bar */
+  .bottom-control-dock {
+    position: fixed;
+    z-index: 1;
+    left: calc(8px + var(--m-safe-left));
+    right: calc(8px + var(--m-safe-right));
+    bottom: calc(var(--m-bottom) + 6px);
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 6px;
+    gap: 6px;
+    border-radius: var(--radius-md);
+    background: rgba(8, 15, 28, 0.94);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+  }
+
+  .dock-row,
+  .dock-scroll {
+    display: flex;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 6px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .dock-row::-webkit-scrollbar,
+  .dock-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  .dock-scroll > .dock-row {
+    display: contents;
+  }
+
+  .dock-row > *,
+  .dock-scroll > .dock-row > * {
+    flex: 0 0 auto;
+  }
+
+  .dock-group-label,
+  .voice-status {
+    display: none;
+  }
+
+  .anatomy-layer-group {
+    gap: 3px;
+    padding: 3px;
+  }
+
+  .layer-btn,
+  .dock-action-btn,
+  .dock-icon-btn,
+  .bio-btn {
+    min-height: 40px;
+    padding: 8px 12px;
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .voice-picker {
+    padding: 3px 6px;
+  }
+
+  .voice-picker select {
+    max-width: 210px;
+    min-height: 34px;
+  }
+
+  /* Tab bar: opens the species list or the field guide */
+  .mobile-tabbar {
+    position: fixed;
+    z-index: 3;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    height: var(--m-bottom);
+    padding: 6px calc(10px + var(--m-safe-right)) var(--m-safe-bottom) calc(10px + var(--m-safe-left));
+    background: rgba(6, 12, 24, 0.97);
+    border-top: 1px solid var(--border-subtle);
+    pointer-events: auto;
+  }
+
+  .mobile-tab-btn {
+    flex: 1 1 0;
+    max-width: 280px;
+    height: 40px;
+    border-radius: 999px;
+    border: 1px solid var(--border-subtle);
+    background: rgba(30, 41, 59, 0.85);
+    color: var(--text-primary);
+    font-size: 0.88rem;
+    font-weight: 800;
+    cursor: pointer;
+  }
+
+  .mobile-tab-btn.active {
+    background: var(--amber-gold);
+    border-color: var(--amber-bright);
+    color: #09090b;
+  }
+
+  /* Species list & field guide become bottom sheets (hidden = out of tab order) */
   .left-roster-panel,
   .right-inspector-panel {
+    position: fixed;
+    z-index: 2;
+    left: 0;
+    right: 0;
+    bottom: var(--m-bottom);
+    width: min(100%, 620px);
+    margin: 0 auto;
+    height: min(66vh, 640px);
+    height: min(66dvh, 640px);
+    max-height: calc(100vh - var(--m-top) - var(--m-bottom) - 12px);
+    max-height: calc(100dvh - var(--m-top) - var(--m-bottom) - 12px);
+    border: 1px solid var(--border-subtle);
+    border-bottom: none;
+    border-radius: 16px 16px 0 0;
+    background: rgba(9, 16, 30, 0.97);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.35);
+    transform: translateY(calc(100% + var(--m-bottom)));
+    visibility: hidden;
+    transition: transform 0.24s ease, visibility 0s linear 0.24s;
+  }
+
+  body[data-mobile-sheet='roster'] .left-roster-panel,
+  body[data-mobile-sheet='guide'] .right-inspector-panel {
+    transform: none;
+    visibility: visible;
+    transition: transform 0.24s ease;
+  }
+
+  .sheet-header {
+    display: flex;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 10px 8px 14px;
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .sheet-title {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: var(--amber-bright);
+  }
+
+  .sheet-close-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 999px;
+    border: 1px solid var(--border-subtle);
+    background: rgba(30, 41, 59, 0.9);
+    color: var(--text-primary);
+    font-size: 1rem;
+    cursor: pointer;
+  }
+
+  .right-inspector-panel {
+    padding: 0 14px 16px;
+  }
+
+  .right-inspector-panel > .sheet-header {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    margin: 0 -14px;
+    background: rgba(9, 16, 30, 0.98);
+  }
+
+  .paleo-earth-card {
+    display: none; /* the full Drift Lab is one tap away in the header */
+  }
+
+  .filter-pills-row {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .filter-pills-row::-webkit-scrollbar {
+    display: none;
+  }
+
+  .filter-pill,
+  .roster-atlas-btn {
+    flex-shrink: 0;
+    min-height: 36px;
+    padding: 6px 12px;
+    font-size: 0.78rem;
+  }
+
+  #species-search-input {
+    min-height: 42px;
+  }
+
+  #species-search-input,
+  .atlas-search-input,
+  .atlas-select,
+  .voice-picker select {
+    font-size: 16px; /* below 16px iOS Safari zooms the page into the focused field */
+  }
+
+  .species-card-item,
+  .hotspot-detail-card {
+    padding: 10px 12px;
+  }
+
+  .species-card-meta,
+  .metric-label,
+  .era-chip,
+  .diet-chip,
+  .stance-chip,
+  .hotspot-card-bone,
+  .scale-bar-label-row {
+    font-size: 0.74rem;
+  }
+
+  /* 3D hotspot pins: just the numbered dot (the caption shows the name) */
+  .hotspot-pin-btn {
+    padding: 4px;
+  }
+
+  .hotspot-pin-btn > span:not(.hotspot-pin-num) {
+    display: none;
+  }
+
+  .hotspot-pin-num {
+    width: 24px;
+    height: 24px;
+    font-size: 0.78rem;
+  }
+
+  /* Modals fill the screen inside the safe area */
+  .modal-backdrop {
+    padding: calc(8px + var(--m-safe-top)) calc(8px + var(--m-safe-right)) calc(8px + var(--m-safe-bottom))
+      calc(8px + var(--m-safe-left));
+  }
+
+  .modal-card {
+    max-height: 100%;
+    padding: 14px;
+    gap: 12px;
+  }
+
+  .modal-card--atlas {
+    height: 100%;
+  }
+
+  .modal-title {
+    font-size: 1rem;
+  }
+
+  .modal-subtitle {
+    font-size: 0.76rem;
+  }
+
+  .modal-close-btn {
+    min-width: 40px;
+    min-height: 40px;
+  }
+
+  .preset-ma-btn,
+  .impact-preset-btn,
+  .quiz-opt-btn {
+    min-height: 38px;
+  }
+
+  .atlas-toolbar {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .atlas-search-input {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Phones in portrait: two header rows, taller sheets, compact era pills */
+@media (max-width: 640px) {
+  :root {
+    --m-bar-row: 46px;
+    --m-top: calc(var(--m-bar-row) * 2 + var(--m-safe-top));
+  }
+
+  .top-nav-bar {
+    flex-wrap: wrap;
+    align-content: flex-start;
+    row-gap: 0;
+  }
+
+  .brand-cluster {
+    flex: 1 1 100%;
+    height: var(--m-bar-row);
+  }
+
+  .top-scroll-strip {
+    flex: 1 1 100%;
+  }
+
+  .era-tab-sub {
+    display: none;
+  }
+
+  .mode-tab-btn {
+    padding: 6px 10px;
+    font-size: 0.76rem;
+  }
+
+  .bottom-control-dock {
+    left: calc(6px + var(--m-safe-left));
+    right: calc(6px + var(--m-safe-right));
+  }
+
+  .left-roster-panel,
+  .right-inspector-panel {
+    height: 72vh;
+    height: 72dvh;
+  }
+}
+
+/* Phones in landscape: one header row, one dock row, no era banner */
+@media (max-width: 1024px) and (max-height: 500px) {
+  :root {
+    --m-bar-row: 44px;
+    --m-top: calc(var(--m-bar-row) + var(--m-safe-top));
+    --m-tabbar: 44px;
+  }
+
+  .top-nav-bar {
+    flex-wrap: nowrap;
+  }
+
+  .brand-cluster {
+    flex: 0 0 auto;
     height: auto;
-    max-height: 38vh;
+  }
+
+  .brand-title,
+  .passport-badge,
+  .era-tab-sub,
+  .era-context-banner {
+    display: none;
+  }
+
+  .top-scroll-strip {
+    flex: 1 1 auto;
+  }
+
+  .center-top-stack {
+    justify-content: flex-start;
+  }
+
+  .whatif-toast {
+    top: calc(var(--m-top) + 52px);
+    max-height: 32vh;
+  }
+
+  .bottom-control-dock {
+    flex-direction: row;
+    padding: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .bottom-control-dock > .dock-row,
+  .bottom-control-dock > .dock-scroll {
+    display: contents;
+  }
+
+  .layer-btn,
+  .dock-action-btn,
+  .dock-icon-btn,
+  .bio-btn {
+    min-height: 36px;
+    padding: 6px 10px;
+  }
+
+  .mobile-tab-btn {
+    height: 34px;
+  }
+
+  .left-roster-panel,
+  .right-inspector-panel {
+    height: calc(100vh - var(--m-top) - var(--m-bottom) - 8px);
+    height: calc(100dvh - var(--m-top) - var(--m-bottom) - 8px);
+  }
+
+  /* Short sheets: one compact header, then search + filters on a single row so the list keeps room */
+  .sheet-header {
+    padding: 4px 8px 4px 12px;
+  }
+
+  .sheet-close-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .roster-title-row {
+    display: none; /* the Atlas button is already in the header strip */
+  }
+
+  .roster-header {
+    flex-direction: row;
+    align-items: center;
+    padding: 6px 10px;
+  }
+
+  .search-box {
+    flex: 0 0 40%;
+  }
+
+  #species-search-input {
+    min-height: 36px;
+    padding: 6px 10px;
+  }
+
+  .filter-pills-row {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .left-roster-panel,
+  .right-inspector-panel {
+    transition: none !important;
   }
 }

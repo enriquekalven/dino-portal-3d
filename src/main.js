@@ -164,7 +164,11 @@ const engine = new DinoWorldEngine(canvas, ERAS, SPECIES, {
 }, { backdropTheme: initialBackdrop });
 
 function updatePassportCounter() {
-  passportCounter.textContent = `🦴 ${discoveredSpecies.size} / ${SPECIES.length} Discovered`;
+  // "Discovered" lives in a .lbl-long span so narrow screens can drop it (same text on desktop).
+  const suffix = document.createElement('span');
+  suffix.className = 'lbl-long';
+  suffix.textContent = ' Discovered';
+  passportCounter.replaceChildren(`🦴 ${discoveredSpecies.size} / ${SPECIES.length}`, suffix);
 }
 
 // -----------------------------------------------------------------------------
@@ -209,7 +213,10 @@ function updateEraTabsUI(activeEraId) {
 }
 
 function updateEraBanner(era) {
-  bannerEraName.textContent = `${era.name} (${era.timeRange})`;
+  const range = document.createElement('span');
+  range.className = 'lbl-long';
+  range.textContent = ` (${era.timeRange})`;
+  bannerEraName.replaceChildren(era.name, range);
   bannerEraFlora.textContent = era.flora;
 }
 
@@ -293,6 +300,7 @@ function renderSpeciesRoster() {
 
     btn.addEventListener('click', () => {
       engine.selectSpecies(sp.id);
+      closeMobileSheet(); // phones: drop the sheet so the chosen dinosaur is visible
     });
 
     speciesRosterList.appendChild(btn);
@@ -367,6 +375,7 @@ function updateInspectorPanel(sp, era) {
 
     card.addEventListener('click', () => {
       selectHotspot(idx);
+      closeMobileSheet(); // phones: reveal the camera zoom on that body part
     });
 
     inspHotspotsList.appendChild(card);
@@ -508,6 +517,64 @@ function updateMiniPaleoEarth(sp, era) {
     pinLabel: sp.name,
   });
 }
+
+// -----------------------------------------------------------------------------
+// 5b. PHONES & TABLETS: SPECIES LIST AND FIELD GUIDE AS BOTTOM SHEETS
+// -----------------------------------------------------------------------------
+// At <= 1024px (matches the styles.css breakpoint) the two side panels become bottom sheets
+// opened from a tab bar, so the dinosaur keeps most of the screen. Desktop never sets
+// <body data-mobile-sheet>, so its three-column layout is untouched.
+const SHEET_LAYOUT_QUERY = window.matchMedia('(max-width: 1024px)');
+const sheetToggles = {
+  roster: document.getElementById('btn-mobile-sheet-roster'),
+  guide: document.getElementById('btn-mobile-sheet-guide'),
+};
+const sheetPanels = {
+  roster: document.getElementById('roster-panel'),
+  guide: document.getElementById('inspector-panel'),
+};
+
+function setMobileSheet(name) {
+  const previous = document.body.dataset.mobileSheet || '';
+  const open = (name === 'roster' || name === 'guide') && SHEET_LAYOUT_QUERY.matches ? name : '';
+  if (open) {
+    document.body.dataset.mobileSheet = open;
+  } else {
+    delete document.body.dataset.mobileSheet;
+  }
+  Object.entries(sheetToggles).forEach(([key, btn]) => {
+    btn?.setAttribute('aria-expanded', String(key === open));
+    btn?.classList.toggle('active', key === open);
+  });
+  // Keyboard/screen-reader users land inside the sheet, and back on its tab when it closes.
+  if (open) {
+    sheetPanels[open]?.querySelector('.sheet-close-btn')?.focus({ preventScroll: true });
+  } else if (previous && sheetPanels[previous]?.contains(document.activeElement)) {
+    sheetToggles[previous]?.focus({ preventScroll: true });
+  }
+}
+
+function closeMobileSheet() {
+  if (document.body.dataset.mobileSheet) setMobileSheet('');
+}
+
+Object.entries(sheetToggles).forEach(([key, btn]) => {
+  btn?.addEventListener('click', () => {
+    setMobileSheet(document.body.dataset.mobileSheet === key ? '' : key);
+  });
+});
+document.querySelectorAll('[data-close-sheet]').forEach((btn) => {
+  btn.addEventListener('click', closeMobileSheet);
+});
+// Rotating a tablet / widening a window into the desktop layout must not leave a sheet state behind.
+if (typeof SHEET_LAYOUT_QUERY.addEventListener === 'function') {
+  SHEET_LAYOUT_QUERY.addEventListener('change', closeMobileSheet);
+} else if (typeof SHEET_LAYOUT_QUERY.addListener === 'function') {
+  SHEET_LAYOUT_QUERY.addListener(closeMobileSheet); // Safari < 14
+}
+
+// Captions (roar, hotspot, apex action…) sit over the 3D view: a tap dismisses them.
+whatifToast.addEventListener('click', () => whatifToast.classList.add('hidden'));
 
 // -----------------------------------------------------------------------------
 // 6. INTERACTIVE CONTROLS & BIO-ACOUSTIC TRIGGERS
@@ -945,9 +1012,9 @@ function updateDynamicCountLabels() {
   if (allPill) {
     allPill.textContent = `All (${total})`;
   }
-  const openAtlasBtn = document.getElementById('btn-open-atlas-modal');
-  if (openAtlasBtn) {
-    openAtlasBtn.textContent = `📖 Full Dino Atlas (${total})`;
+  const atlasCount = document.getElementById('atlas-count');
+  if (atlasCount) {
+    atlasCount.textContent = String(total);
   }
 }
 
@@ -1066,13 +1133,14 @@ atlasEraSelect?.addEventListener('change', renderAtlasModal);
 atlasDietSelect?.addEventListener('change', renderAtlasModal);
 atlasSortSelect?.addEventListener('change', renderAtlasModal);
 
-// Close modals on Escape key
+// Close modals (and any phone/tablet bottom sheet) on Escape key
 window.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     driftModal.classList.add('hidden');
     impactModal.classList.add('hidden');
     quizModal.classList.add('hidden');
     atlasModal?.classList.add('hidden');
+    closeMobileSheet();
   }
 });
 

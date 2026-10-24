@@ -24,14 +24,42 @@ import { PBR, buildStudioEnvironmentScene } from './HyperRealKit.js';
  * - 'portal': Helical 3D Time-Portal across all 6 Geological Era Habitat Dioramas
  *             (Permian → Triassic → Jurassic → Early Cretaceous → Late Cretaceous → K-Pg).
  *             Diorama creatures are populated during idle frames so the lab is instant.
+ *
+ * Backdrop: 'light' soft studio cyclorama (default) or 'dark' per-era night sky. Switching it only
+ * changes the background, fog and bloom threshold, never the image-based lighting on the specimens.
  */
 
+export const DEFAULT_BACKDROP_THEME = 'light';
+
+// Light backdrop: off-white tinted toward each era's theme colour so the six eras stay recognisable.
+// These are linear HDR values: ACES filmic tone mapping (exposure 1.08) compresses them to on-screen
+// pastels around #e5eae8–#ede6e7, which is why the gain is deliberately above 1.
+const LIGHT_BACKDROP_BASE = new THREE.Color('#eef2f7');
+const LIGHT_BACKDROP_ERA_TINT = 0.3;
+const LIGHT_BACKDROP_HDR_GAIN = 1.6;
+const DARK_BACKDROP_FALLBACK_TINT = [0.02, 0.06, 0.1];
+
+// Bloom must ignore a bright backdrop, otherwise the whole frame glows and bleeds over the specimen.
+const BLOOM_THRESHOLD = 0.82;
+const BLOOM_BACKDROP_MARGIN = 0.2;
+
+/** Linear-light luminance, matching the weights of three.js' GLSL luminance() used by the bloom pass. */
+function linearLuminance(color) {
+  return 0.2126729 * color.r + 0.7151522 * color.g + 0.072175 * color.b;
+}
+
+function normalizeBackdropTheme(theme) {
+  return theme === 'light' || theme === 'dark' ? theme : DEFAULT_BACKDROP_THEME;
+}
+
 export class DinoWorldEngine {
-  constructor(canvas, eras, speciesList, callbacks = {}) {
+  constructor(canvas, eras, speciesList, callbacks = {}, options = {}) {
     this.canvas = canvas;
     this.eras = eras;
     this.speciesList = speciesList;
     this.callbacks = callbacks;
+    this.backdropTheme = normalizeBackdropTheme(options.backdropTheme);
+    this._backdropKey = null;
 
     this.scene = new THREE.Scene();
     this.scene.fog = new THREE.FogExp2(0x040914, 0.012);
@@ -113,7 +141,7 @@ export class DinoWorldEngine {
       new THREE.Vector2(window.innerWidth, window.innerHeight),
       0.32,
       0.55,
-      0.82
+      BLOOM_THRESHOLD
     );
     this.composer.addPass(this.bloomPass);
 
@@ -183,6 +211,27 @@ export class DinoWorldEngine {
       this.envCache.set(era.id, target.texture);
     }
     this.scene.environment = this.envCache.get(era.id);
+  }
+
+  /** Applies the era's backdrop for the current theme to the background, fog and bloom threshold. */
+  _applyBackdropForEra(era) {
+    const key = `${this.backdropTheme}:${era.id}`;
+    if (this._backdropKey === key) return;
+    this._backdropKey = key;
+
+    let color;
+    if (this.backdropTheme === 'dark') {
+      const [r, g, b] = era.skyTint || DARK_BACKDROP_FALLBACK_TINT;
+      color = new THREE.Color(r, g, b);
+    } else {
+      color = LIGHT_BACKDROP_BASE.clone()
+        .lerp(new THREE.Color(era.themeColor || '#10b981'), LIGHT_BACKDROP_ERA_TINT)
+        .multiplyScalar(LIGHT_BACKDROP_HDR_GAIN);
+    }
+
+    this.scene.background = color;
+    this.scene.fog.color.copy(color);
+    this.bloomPass.threshold = Math.max(BLOOM_THRESHOLD, linearLuminance(color) + BLOOM_BACKDROP_MARGIN);
   }
 
   _initAtmosphericSpores() {
@@ -485,6 +534,13 @@ export class DinoWorldEngine {
     this.setScaleComparatorVisible(visible);
   }
 
+  /** Switches the 3D backdrop between 'light' (studio cyclorama) and 'dark' (per-era night sky). */
+  setBackdropTheme(theme) {
+    this.backdropTheme = normalizeBackdropTheme(theme);
+    this._applyBackdropForEra(this.eras[this.activeEraIndex] || this.eras[0]);
+    return this.backdropTheme;
+  }
+
   toggleWhatIf() {
     this.whatIfActive = !this.whatIfActive;
     return this.whatIfActive;
@@ -663,10 +719,7 @@ export class DinoWorldEngine {
     this.accentLight.position.set(lookTarget.x, lookTarget.y + 3.5, lookTarget.z + 2.0);
     this.accentLight.color.set(activeEra.themeColor || '#10b981');
 
-    const [sr, sg, sb] = activeEra.skyTint || [0.02, 0.06, 0.1];
-    const bgCol = new THREE.Color(sr, sg, sb);
-    this.scene.background = bgCol;
-    this.scene.fog.color.copy(bgCol);
+    this._applyBackdropForEra(activeEra);
 
     if (this.callbacks.onFrame) {
       this.callbacks.onFrame(elapsed);

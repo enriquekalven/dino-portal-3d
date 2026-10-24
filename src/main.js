@@ -43,6 +43,7 @@ const btnNarrateStory = document.getElementById('btn-narrate-story');
 const btnTriggerWhatif = document.getElementById('btn-trigger-whatif');
 
 const btnToggleAmbience = document.getElementById('btn-toggle-ambience');
+const btnToggleBackdrop = document.getElementById('btn-toggle-backdrop');
 const narratorVoiceSelect = document.getElementById('narrator-voice-select');
 const narratorVoiceStatus = document.getElementById('narrator-voice-status');
 
@@ -118,6 +119,11 @@ document.addEventListener('visibilitychange', () => {
   }
 });
 
+// 3D backdrop: light by default; a saved choice is applied to <html data-backdrop> pre-paint by
+// src/backdrop-boot.js, so we start the engine from that attribute.
+const BACKDROP_STORAGE_KEY = 'dinoverse-backdrop'; // must match src/backdrop-boot.js
+const initialBackdrop = document.documentElement.dataset.backdrop === 'dark' ? 'dark' : 'light';
+
 // Initialize 3D Engine
 const engine = new DinoWorldEngine(canvas, ERAS, SPECIES, {
   onSpeciesChange: (species, era) => {
@@ -155,7 +161,7 @@ const engine = new DinoWorldEngine(canvas, ERAS, SPECIES, {
   onFrame: () => {
     updateFloatingHotspotPositions();
   },
-});
+}, { backdropTheme: initialBackdrop });
 
 function updatePassportCounter() {
   passportCounter.textContent = `🦴 ${discoveredSpecies.size} / ${SPECIES.length} Discovered`;
@@ -618,6 +624,27 @@ btnToggleAmbience.addEventListener('click', () => {
   if (audio.ambienceEnabled) greetWithCall(engine.activeSpecies);
 });
 renderAmbienceToggle();
+
+// Light / dark 3D backdrop toggle (light by default; the visitor's choice is remembered)
+function renderBackdropToggle(backdrop) {
+  if (!btnToggleBackdrop) return;
+  const next = backdrop === 'dark' ? 'light' : 'dark';
+  const label = `Switch to ${next} 3D backdrop`;
+  btnToggleBackdrop.textContent = next === 'dark' ? '🌙' : '☀️';
+  btnToggleBackdrop.setAttribute('aria-label', label);
+  btnToggleBackdrop.title = label;
+}
+btnToggleBackdrop?.addEventListener('click', () => {
+  const backdrop = engine.setBackdropTheme(engine.backdropTheme === 'dark' ? 'light' : 'dark');
+  document.documentElement.dataset.backdrop = backdrop;
+  try {
+    localStorage.setItem(BACKDROP_STORAGE_KEY, backdrop);
+  } catch {
+    // Storage unavailable (privacy mode): the choice still applies for this visit.
+  }
+  renderBackdropToggle(backdrop);
+});
+renderBackdropToggle(engine.backdropTheme);
 
 // Narrator voice picker: Google Cloud Chirp 3 HD voices (via the local proxy) or the device voice
 function renderVoicePicker(status) {

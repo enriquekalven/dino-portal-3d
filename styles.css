@@ -1,5 +1,5 @@
 :root {
-  --bg-deep: #040914;
+  --bg-deep: #e9eaeb; /* matches the default light 3D backdrop shown before WebGL paints */
   --surface-glass: rgba(11, 19, 34, 0.86);
   --surface-card: rgba(18, 30, 52, 0.78);
   --surface-hover: rgba(30, 48, 80, 0.85);
@@ -20,6 +20,11 @@
   --radius-md: 10px;
   --radius-lg: 14px;
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* Dark 3D backdrop: opted into via the top-bar toggle and applied pre-paint by src/backdrop-boot.js */
+html[data-backdrop="dark"] {
+  --bg-deep: #040914;
 }
 
 * {
@@ -197,6 +202,21 @@ input:focus-visible {
   border-color: rgba(245, 158, 11, 0.55);
   background: rgba(180, 83, 9, 0.28);
   color: #fef3c7;
+}
+
+/* Compact light/dark 3D backdrop toggle (icon shows the backdrop you will switch to) */
+.top-action-btn--backdrop {
+  align-self: stretch;
+  min-width: 36px;
+  padding: 0 9px;
+  border-color: rgba(148, 163, 184, 0.45);
+  background: rgba(30, 41, 59, 0.55);
+  font-size: 0.95rem;
+  line-height: 1;
+}
+
+.top-action-btn--backdrop:hover {
+  background: rgba(51, 65, 85, 0.85);
 }
 
 /* -------------------------------------------------------------------------- */

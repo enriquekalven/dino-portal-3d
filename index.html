@@ -48,14 +48,36 @@
           🎓 Dino Quiz
         </button>
         <button
-          id="btn-toggle-backdrop"
-          class="top-action-btn top-action-btn--backdrop"
+          id="btn-toggle-fullview"
+          class="top-action-btn top-action-btn--view"
           type="button"
-          aria-label="Switch to dark 3D backdrop"
-          title="Switch to dark 3D backdrop"
+          aria-pressed="false"
+          title="Toggle Full 3D View (hide side panels) — Shortcut: F"
         >
-          🌙
+          ⛶ <span class="lbl-long">Full </span>View
         </button>
+        <div id="theme-mode-switcher" class="theme-mode-switcher" role="group" aria-label="Theme Mode: Light or Dark">
+          <button
+            id="btn-theme-light"
+            class="theme-mode-btn active"
+            type="button"
+            data-theme-mode="light"
+            aria-pressed="true"
+            title="Switch portal to Light Mode"
+          >
+            ☀️ <span class="lbl-theme">Light</span>
+          </button>
+          <button
+            id="btn-theme-dark"
+            class="theme-mode-btn"
+            type="button"
+            data-theme-mode="dark"
+            aria-pressed="false"
+            title="Switch portal to Dark Mode"
+          >
+            🌙 <span class="lbl-theme">Dark</span>
+          </button>
+        </div>
       </div>
     </div>
   </header>
@@ -110,25 +132,58 @@
     <section class="center-viewport-hud" aria-label="3D Viewport Controls">
       <!-- Dual 3D Mode Switcher + Era Summary Banner -->
       <div class="center-top-stack">
-        <div class="mode-switcher-pill" role="tablist" aria-label="3D Experience Mode">
-          <button
-            id="mode-btn-lab"
-            type="button"
-            role="tab"
-            aria-selected="true"
-            class="mode-tab-btn active"
-          >
-            🔬 <span class="lbl-long">3D Dino </span>Anatomy Lab
-          </button>
-          <button
-            id="mode-btn-portal"
-            type="button"
-            role="tab"
-            aria-selected="false"
-            class="mode-tab-btn"
-          >
-            ⏳ <span class="lbl-long">3D </span>Era <span class="lbl-long">Habitat </span>Portal<span class="lbl-long"> (6 Eras)</span>
-          </button>
+        <div class="center-top-controls-row">
+          <div class="mode-switcher-pill" role="tablist" aria-label="3D Experience Mode">
+            <button
+              id="mode-btn-lab"
+              type="button"
+              role="tab"
+              aria-selected="true"
+              class="mode-tab-btn active"
+            >
+              🔬 <span class="lbl-long">3D Dino </span>Anatomy Lab
+            </button>
+            <button
+              id="mode-btn-portal"
+              type="button"
+              role="tab"
+              aria-selected="false"
+              class="mode-tab-btn"
+            >
+              ⏳ <span class="lbl-long">3D </span>Era <span class="lbl-long">Habitat </span>Portal<span class="lbl-long"> (6 Eras)</span>
+            </button>
+          </div>
+
+          <!-- Quick Floating Viewport Controls (Full View, Full Screen, Hide Dock) -->
+          <div id="viewport-quick-bar" class="viewport-quick-bar" role="group" aria-label="Viewport Display Controls">
+            <button
+              id="btn-dock-fullview"
+              type="button"
+              class="vp-quick-btn"
+              aria-pressed="false"
+              title="Expand 3D viewport to Full View (hide side panels) — Shortcut: F"
+            >
+              ↔️ Full View
+            </button>
+            <button
+              id="btn-dock-fullscreen"
+              type="button"
+              class="vp-quick-btn"
+              aria-pressed="false"
+              title="Enter or exit Browser Full Screen"
+            >
+              ⛶ Full Screen
+            </button>
+            <button
+              id="btn-quick-dock"
+              type="button"
+              class="vp-quick-btn hidden"
+              aria-pressed="false"
+              title="Minimize or restore bottom control dock"
+            >
+              🎛️ Hide Dock
+            </button>
+          </div>
         </div>
 
         <div id="active-era-banner" class="era-context-banner">
@@ -138,12 +193,34 @@
         </div>
       </div>
 
-      <!-- Action Toast Notification (tap to dismiss) -->
-      <div id="whatif-toast" class="whatif-toast hidden" role="status" aria-live="polite"></div>
+      <!-- Action Toast Notification (with Minimize and Hide controls) -->
+      <div id="whatif-toast" class="whatif-toast hidden" role="status" aria-live="polite">
+        <span id="whatif-toast-text" class="whatif-toast-text"></span>
+        <div class="whatif-toast-actions">
+          <button
+            id="btn-toast-minimize"
+            type="button"
+            class="toast-ctrl-btn"
+            title="Minimize description bubble"
+            aria-label="Minimize description bubble"
+          >
+            −
+          </button>
+          <button
+            id="btn-toast-close"
+            type="button"
+            class="toast-ctrl-btn"
+            title="Hide description bubble"
+            aria-label="Hide description bubble"
+          >
+            ✕
+          </button>
+        </div>
+      </div>
 
       <!-- Bottom 3D Interactive Controls Dock -->
-      <div class="bottom-control-dock">
-        <!-- Row 1: 3-Layer X-Ray Anatomy Toggle + Scale Comparator -->
+      <div id="bottom-control-dock" class="bottom-control-dock">
+        <!-- Row 1: 3-Layer X-Ray Anatomy Toggle + Hotspot Bubbles Toggle + Scale + Reset -->
         <div class="dock-row">
           <div class="anatomy-layer-group" role="group" aria-label="3D Anatomical X-Ray Layer">
             <span class="dock-group-label">3D Layer:</span>
@@ -151,15 +228,25 @@
               🦎 Skin<span class="lbl-long"> &amp; Feathers</span>
             </button>
             <button type="button" class="layer-btn" data-layer="muscle">
-              🫀 Muscles<span class="lbl-long"> &amp; Beating Heart</span>
+              🫀 Muscles<span class="lbl-long"> &amp; Heart</span>
             </button>
             <button type="button" class="layer-btn" data-layer="skeleton">
               🦴 <span class="lbl-long">Fossil </span>Skeleton
             </button>
           </div>
 
+          <button
+            id="btn-hotspot-mode"
+            type="button"
+            class="dock-action-btn"
+            data-hotspot-mode="full"
+            title="Cycle 3D yellow description bubbles: Full Labels → Compact Dots → Hidden"
+          >
+            🏷️ Bubbles: Full
+          </button>
+
           <button id="btn-toggle-scale" type="button" class="dock-action-btn" aria-pressed="false">
-            📏 Compare Size<span class="lbl-long"> (Kid 1.4m &amp; Bus 11m)</span>
+            📏 Compare Size
           </button>
 
           <button id="btn-reset-camera" type="button" class="dock-icon-btn" title="Reset 3D Camera View">
@@ -268,7 +355,17 @@
 
       <!-- Clickable 3D Anatomical Hotspots -->
       <div class="hotspots-card">
-        <h3 class="section-heading">🔬 Clickable 3D Anatomy &amp; Fossil Hotspots</h3>
+        <div class="hotspots-card-header">
+          <h3 class="section-heading">🔬 Clickable 3D Anatomy &amp; Fossil Hotspots</h3>
+          <button
+            id="btn-inspector-pins"
+            type="button"
+            class="insp-pins-toggle-btn"
+            title="Minimize or hide floating 3D hotspot bubbles"
+          >
+            🏷️ 3D Bubbles: Full
+          </button>
+        </div>
         <div id="insp-hotspots-list" class="insp-hotspots-list"></div>
       </div>
 

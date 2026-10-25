@@ -34,16 +34,28 @@ const modeBtnPortal = document.getElementById('mode-btn-portal');
 const bannerEraName = document.getElementById('banner-era-name');
 const bannerEraFlora = document.getElementById('banner-era-flora');
 const whatifToast = document.getElementById('whatif-toast');
+const whatifToastText = document.getElementById('whatif-toast-text');
+const btnToastMinimize = document.getElementById('btn-toast-minimize');
+const btnToastClose = document.getElementById('btn-toast-close');
 
+const btnHotspotMode = document.getElementById('btn-hotspot-mode');
+const btnInspectorPins = document.getElementById('btn-inspector-pins');
 const btnToggleScale = document.getElementById('btn-toggle-scale');
 const btnResetCamera = document.getElementById('btn-reset-camera');
+const btnToggleFullview = document.getElementById('btn-toggle-fullview');
+const btnDockFullview = document.getElementById('btn-dock-fullview');
+const btnDockFullscreen = document.getElementById('btn-dock-fullscreen');
+const btnQuickDock = document.getElementById('btn-quick-dock');
+const btnQuickExitFullview = document.getElementById('btn-quick-exit-fullview');
+
 const btnPlayRoar = document.getElementById('btn-play-roar');
 const btnPlayFootsteps = document.getElementById('btn-play-footsteps');
 const btnNarrateStory = document.getElementById('btn-narrate-story');
 const btnTriggerWhatif = document.getElementById('btn-trigger-whatif');
 
 const btnToggleAmbience = document.getElementById('btn-toggle-ambience');
-const btnToggleBackdrop = document.getElementById('btn-toggle-backdrop');
+const btnThemeLight = document.getElementById('btn-theme-light');
+const btnThemeDark = document.getElementById('btn-theme-dark');
 const narratorVoiceSelect = document.getElementById('narrator-voice-select');
 const narratorVoiceStatus = document.getElementById('narrator-voice-status');
 
@@ -434,31 +446,149 @@ function render2DScaleComparison(sp) {
 }
 
 // -----------------------------------------------------------------------------
-// 4. FLOATING 3D ANATOMICAL HOTSPOT PINS
+// 4. FLOATING 3D ANATOMICAL HOTSPOT PINS & TOAST DESCRIPTION CONTROLS
 // -----------------------------------------------------------------------------
+const HOTSPOT_STORAGE_KEY = 'dinoverse-hotspots-mode';
+const HOTSPOT_MODES = ['full', 'compact', 'hidden'];
 let hotspotPinElements = [];
+let hotspotDisplayMode = 'full';
+try {
+  const savedMode = localStorage.getItem(HOTSPOT_STORAGE_KEY);
+  if (HOTSPOT_MODES.includes(savedMode)) {
+    hotspotDisplayMode = savedMode;
+  }
+} catch {
+  // Ignore storage errors in restricted privacy modes
+}
+
+function setHotspotDisplayMode(mode) {
+  const validMode = HOTSPOT_MODES.includes(mode) ? mode : 'full';
+  hotspotDisplayMode = validMode;
+  hotspotOverlay.dataset.hotspotMode = validMode;
+  try {
+    localStorage.setItem(HOTSPOT_STORAGE_KEY, validMode);
+  } catch {
+    // Ignore storage errors
+  }
+
+  const labelMap = {
+    full: '🏷️ Bubbles: Full',
+    compact: '🏷️ Bubbles: Min',
+    hidden: '🏷️ Bubbles: Off',
+  };
+  const inspLabelMap = {
+    full: '🏷️ 3D Bubbles: Full',
+    compact: '🏷️ 3D Bubbles: Min',
+    hidden: '🏷️ 3D Bubbles: Off',
+  };
+  if (btnHotspotMode) {
+    btnHotspotMode.textContent = labelMap[validMode];
+    btnHotspotMode.dataset.hotspotMode = validMode;
+    btnHotspotMode.setAttribute('aria-pressed', String(validMode !== 'hidden'));
+  }
+  if (btnInspectorPins) {
+    btnInspectorPins.textContent = inspLabelMap[validMode];
+  }
+}
+
+function cycleHotspotDisplayMode() {
+  const idx = HOTSPOT_MODES.indexOf(hotspotDisplayMode);
+  const next = HOTSPOT_MODES[(idx + 1) % HOTSPOT_MODES.length];
+  setHotspotDisplayMode(next);
+}
+
+setHotspotDisplayMode(hotspotDisplayMode);
+btnHotspotMode?.addEventListener('click', cycleHotspotDisplayMode);
+btnInspectorPins?.addEventListener('click', cycleHotspotDisplayMode);
+
+function showViewportToast(message) {
+  if (whatifToastText) {
+    whatifToastText.textContent = message;
+  } else {
+    whatifToast.textContent = message;
+  }
+  whatifToast.classList.remove('hidden');
+}
+
+function setToastMinimized(minimized) {
+  whatifToast.classList.toggle('whatif-toast--minimized', minimized);
+  if (btnToastMinimize) {
+    btnToastMinimize.textContent = minimized ? '+' : '−';
+    const label = minimized ? 'Expand description bubble' : 'Minimize description bubble';
+    btnToastMinimize.title = label;
+    btnToastMinimize.setAttribute('aria-label', label);
+  }
+}
+
+btnToastMinimize?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  setToastMinimized(!whatifToast.classList.contains('whatif-toast--minimized'));
+});
+
+btnToastClose?.addEventListener('click', (e) => {
+  e.stopPropagation();
+  whatifToast.classList.add('hidden');
+});
+
+whatifToastText?.addEventListener('click', () => {
+  if (whatifToast.classList.contains('whatif-toast--minimized')) {
+    setToastMinimized(false);
+  } else {
+    whatifToast.classList.add('hidden');
+  }
+});
 
 function rebuildFloatingHotspotPins(sp) {
   hotspotOverlay.replaceChildren();
   hotspotPinElements = [];
   (sp.hotspots || []).forEach((hs, idx) => {
-    const pin = document.createElement('button');
-    pin.type = 'button';
+    const pin = document.createElement('div');
     pin.className = 'hotspot-pin-btn';
+
+    const mainBtn = document.createElement('button');
+    mainBtn.type = 'button';
+    mainBtn.className = 'hotspot-pin-main';
+    mainBtn.title = `${idx + 1}. ${hs.title} — ${hs.detail}`;
 
     const num = document.createElement('span');
     num.className = 'hotspot-pin-num';
     num.textContent = String(idx + 1);
 
     const text = document.createElement('span');
+    text.className = 'hotspot-pin-label';
     text.textContent = hs.title;
 
-    pin.appendChild(num);
-    pin.appendChild(text);
-
-    pin.addEventListener('click', () => {
+    mainBtn.appendChild(num);
+    mainBtn.appendChild(text);
+    mainBtn.addEventListener('click', () => {
       selectHotspot(idx);
     });
+
+    const minBtn = document.createElement('button');
+    minBtn.type = 'button';
+    minBtn.className = 'hotspot-pin-ctrl hotspot-pin-min';
+    minBtn.textContent = '−';
+    minBtn.title = 'Minimize yellow bubbles to compact numbered dots';
+    minBtn.setAttribute('aria-label', 'Minimize yellow hotspot bubbles');
+    minBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setHotspotDisplayMode('compact');
+    });
+
+    const hideBtn = document.createElement('button');
+    hideBtn.type = 'button';
+    hideBtn.className = 'hotspot-pin-ctrl hotspot-pin-hide';
+    hideBtn.textContent = '✕';
+    hideBtn.title = 'Hide yellow bubbles from 3D view';
+    hideBtn.setAttribute('aria-label', 'Hide yellow hotspot bubbles');
+    hideBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      setHotspotDisplayMode('hidden');
+    });
+
+    pin.appendChild(mainBtn);
+    pin.appendChild(minBtn);
+    pin.appendChild(hideBtn);
 
     hotspotOverlay.appendChild(pin);
     hotspotPinElements.push(pin);
@@ -466,7 +596,7 @@ function rebuildFloatingHotspotPins(sp) {
 }
 
 function updateFloatingHotspotPositions() {
-  if (engine.viewMode !== 'lab') return;
+  if (engine.viewMode !== 'lab' || hotspotDisplayMode === 'hidden') return;
   const projected = engine.getProjectedHotspots();
   hotspotPinElements.forEach((el, idx) => {
     const match = projected.find((p) => p.index === idx);
@@ -495,8 +625,7 @@ function selectHotspot(idx) {
 
   const hs = engine.activeSpecies?.hotspots?.[idx];
   if (hs) {
-    whatifToast.textContent = `🔬 ${hs.title}: ${hs.detail}`;
-    whatifToast.classList.remove('hidden');
+    showViewportToast(`🔬 ${hs.title}: ${hs.detail}`);
   }
 }
 
@@ -573,12 +702,77 @@ if (typeof SHEET_LAYOUT_QUERY.addEventListener === 'function') {
   SHEET_LAYOUT_QUERY.addListener(closeMobileSheet); // Safari < 14
 }
 
-// Captions (roar, hotspot, apex action…) sit over the 3D view: a tap dismisses them.
-whatifToast.addEventListener('click', () => whatifToast.classList.add('hidden'));
+// -----------------------------------------------------------------------------
+// 6. INTERACTIVE CONTROLS, FULL VIEW / FULLSCREEN & BIO-ACOUSTIC TRIGGERS
+// -----------------------------------------------------------------------------
+let isFullView = false;
+let isDockMinimized = false;
 
-// -----------------------------------------------------------------------------
-// 6. INTERACTIVE CONTROLS & BIO-ACOUSTIC TRIGGERS
-// -----------------------------------------------------------------------------
+function setDockMinimized(minimized) {
+  isDockMinimized = Boolean(minimized);
+  document.body.classList.toggle('dock-minimized', isDockMinimized);
+  if (btnQuickDock) {
+    btnQuickDock.setAttribute('aria-pressed', String(isDockMinimized));
+    btnQuickDock.textContent = isDockMinimized ? '🎛️ Show Dock' : '🎛️ Hide Dock';
+  }
+}
+
+function setFullView(active) {
+  isFullView = Boolean(active);
+  document.body.classList.toggle('full-view', isFullView);
+  if (!isFullView) {
+    setDockMinimized(false);
+  }
+  if (btnToggleFullview) {
+    btnToggleFullview.setAttribute('aria-pressed', String(isFullView));
+    btnToggleFullview.textContent = isFullView ? '↙ Exit Full View' : '⛶ Full View';
+  }
+  if (btnDockFullview) {
+    btnDockFullview.setAttribute('aria-pressed', String(isFullView));
+    btnDockFullview.textContent = isFullView ? '↙ Exit Full View' : '↔️ Full View';
+  }
+  btnQuickDock?.classList.toggle('hidden', !isFullView);
+  btnQuickExitFullview?.classList.toggle('hidden', !isFullView);
+  window.dispatchEvent(new Event('resize'));
+}
+
+function updateFullscreenButtonUI() {
+  const fsActive = Boolean(document.fullscreenElement);
+  if (btnDockFullscreen) {
+    btnDockFullscreen.setAttribute('aria-pressed', String(fsActive));
+    btnDockFullscreen.textContent = fsActive ? '↙ Exit Full Screen' : '⛶ Full Screen';
+  }
+}
+
+async function toggleBrowserFullscreen() {
+  try {
+    if (!document.fullscreenElement) {
+      setFullView(true);
+      if (document.documentElement.requestFullscreen) {
+        await document.documentElement.requestFullscreen();
+      }
+    } else if (document.exitFullscreen) {
+      await document.exitFullscreen();
+    }
+  } catch {
+    // Fallback when browser blocks Fullscreen API: Full View still expands the 3D viewport
+    setFullView(!isFullView);
+  }
+  updateFullscreenButtonUI();
+}
+
+btnToggleFullview?.addEventListener('click', () => setFullView(!isFullView));
+btnDockFullview?.addEventListener('click', () => setFullView(!isFullView));
+btnQuickExitFullview?.addEventListener('click', () => {
+  if (document.fullscreenElement && document.exitFullscreen) {
+    document.exitFullscreen().catch(() => {});
+  }
+  setFullView(false);
+});
+btnQuickDock?.addEventListener('click', () => setDockMinimized(!isDockMinimized));
+btnDockFullscreen?.addEventListener('click', toggleBrowserFullscreen);
+document.addEventListener('fullscreenchange', updateFullscreenButtonUI);
+
 searchInput.addEventListener('input', (e) => {
   currentSearch = e.target.value || '';
   renderSpeciesRoster();
@@ -611,8 +805,7 @@ btnToggleScale.addEventListener('click', () => {
   engine.setScaleComparatorVisible(next);
   btnToggleScale.setAttribute('aria-pressed', String(next));
   if (next) {
-    whatifToast.textContent = `📏 3D Scale Active: Blue = 10-Yr-Old Kid (1.4m), Green = Adult (1.8m), Yellow = School Bus (11m) vs. ${engine.activeSpecies.name} (${engine.activeSpecies.metrics.lengthM}m)!`;
-    whatifToast.classList.remove('hidden');
+    showViewportToast(`📏 3D Scale Active: Blue = 10-Yr-Old Kid (1.4m), Green = Adult (1.8m), Yellow = School Bus (11m) vs. ${engine.activeSpecies.name} (${engine.activeSpecies.metrics.lengthM}m)!`);
   } else {
     whatifToast.classList.add('hidden');
   }
@@ -626,15 +819,13 @@ btnResetCamera.addEventListener('click', () => {
 btnPlayRoar.addEventListener('click', () => {
   audio.unlock();
   audio.playRoar(engine.activeSpecies, { intensity: 1.0, kind: 'button' });
-  whatifToast.textContent = `🔊 ${engine.activeSpecies.name}: ${engine.activeSpecies.vocalProfile?.description || 'Prehistoric vocal call'}`;
-  whatifToast.classList.remove('hidden');
+  showViewportToast(`🔊 ${engine.activeSpecies.name}: ${engine.activeSpecies.vocalProfile?.description || 'Prehistoric vocal call'}`);
 });
 
 btnPlayFootsteps.addEventListener('click', () => {
   audio.unlock();
   audio.playFootsteps(engine.activeSpecies);
-  whatifToast.textContent = `🐾 Seismic Footstep Simulation: ${engine.activeSpecies.metrics.weightLabel} at ${engine.activeSpecies.metrics.speedKmh} km/h!`;
-  whatifToast.classList.remove('hidden');
+  showViewportToast(`🐾 Seismic Footstep Simulation: ${engine.activeSpecies.metrics.weightLabel} at ${engine.activeSpecies.metrics.speedKmh} km/h!`);
 });
 
 const NARRATE_IDLE_LABEL = '🗣️ Read Aloud for Kids';
@@ -666,8 +857,7 @@ btnTriggerWhatif.addEventListener('click', () => {
   const active = engine.toggleWhatIf();
   if (active) {
     audio.playRoar(engine.activeSpecies, { intensity: 1.3, kind: 'apex' });
-    whatifToast.textContent = `⚡ ${engine.activeSpecies.whatIfOutcome}`;
-    whatifToast.classList.remove('hidden');
+    showViewportToast(`⚡ ${engine.activeSpecies.whatIfOutcome}`);
     if (engine.activeSpecies.id === 'chicxulub-avian-survivor') {
       openImpactModal();
       audio.playImpactBoom();
@@ -692,26 +882,33 @@ btnToggleAmbience.addEventListener('click', () => {
 });
 renderAmbienceToggle();
 
-// Light / dark 3D backdrop toggle (light by default; the visitor's choice is remembered)
-function renderBackdropToggle(backdrop) {
-  if (!btnToggleBackdrop) return;
-  const next = backdrop === 'dark' ? 'light' : 'dark';
-  const label = `Switch to ${next} 3D backdrop`;
-  btnToggleBackdrop.textContent = next === 'dark' ? '🌙' : '☀️';
-  btnToggleBackdrop.setAttribute('aria-label', label);
-  btnToggleBackdrop.title = label;
+// Labeled Light Mode vs. Dark Mode selector (controls both 3D backdrop and UI theme; light by default)
+function renderThemeModeSwitcher(mode) {
+  const isLight = mode !== 'dark';
+  if (btnThemeLight) {
+    btnThemeLight.classList.toggle('active', isLight);
+    btnThemeLight.setAttribute('aria-pressed', String(isLight));
+  }
+  if (btnThemeDark) {
+    btnThemeDark.classList.toggle('active', !isLight);
+    btnThemeDark.setAttribute('aria-pressed', String(!isLight));
+  }
 }
-btnToggleBackdrop?.addEventListener('click', () => {
-  const backdrop = engine.setBackdropTheme(engine.backdropTheme === 'dark' ? 'light' : 'dark');
-  document.documentElement.dataset.backdrop = backdrop;
+
+function applyThemeMode(requestedMode) {
+  const mode = engine.setBackdropTheme(requestedMode === 'dark' ? 'dark' : 'light');
+  document.documentElement.dataset.backdrop = mode;
   try {
-    localStorage.setItem(BACKDROP_STORAGE_KEY, backdrop);
+    localStorage.setItem(BACKDROP_STORAGE_KEY, mode);
   } catch {
     // Storage unavailable (privacy mode): the choice still applies for this visit.
   }
-  renderBackdropToggle(backdrop);
-});
-renderBackdropToggle(engine.backdropTheme);
+  renderThemeModeSwitcher(mode);
+}
+
+btnThemeLight?.addEventListener('click', () => applyThemeMode('light'));
+btnThemeDark?.addEventListener('click', () => applyThemeMode('dark'));
+renderThemeModeSwitcher(engine.backdropTheme);
 
 // Narrator voice picker: Google Cloud Chirp 3 HD voices (via the local proxy) or the device voice
 function renderVoicePicker(status) {
@@ -1133,14 +1330,24 @@ atlasEraSelect?.addEventListener('change', renderAtlasModal);
 atlasDietSelect?.addEventListener('change', renderAtlasModal);
 atlasSortSelect?.addEventListener('change', renderAtlasModal);
 
-// Close modals (and any phone/tablet bottom sheet) on Escape key
+// Close modals, dismiss toast, or exit Full View on Escape; press F to toggle Full View
 window.addEventListener('keydown', (e) => {
+  const tag = (e.target?.tagName || '').toLowerCase();
+  const inField = tag === 'input' || tag === 'select' || tag === 'textarea' || e.target?.isContentEditable;
+
   if (e.key === 'Escape') {
     driftModal.classList.add('hidden');
     impactModal.classList.add('hidden');
     quizModal.classList.add('hidden');
     atlasModal?.classList.add('hidden');
+    whatifToast.classList.add('hidden');
     closeMobileSheet();
+    if (isFullView) {
+      setFullView(false);
+    }
+  } else if (!inField && !e.metaKey && !e.ctrlKey && !e.altKey && (e.key === 'f' || e.key === 'F')) {
+    e.preventDefault();
+    setFullView(!isFullView);
   }
 });
 

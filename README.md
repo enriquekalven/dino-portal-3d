@@ -28,6 +28,12 @@ An interactive, offline-ready 3D educational portal for kids, students, and pale
 6. **Paleo-Earth Continental Drift Lab, Chicxulub Impact Simulator & Dino Quiz**
    - Interactive continental drift globe (**Pangaea → Laurasia/Gondwana → Modern Continents**), atmospheric $O_2$ / $CO_2$ / global temperature telemetry, fossil discovery map pins, **66 MYA Chicxulub Asteroid Impact Simulator**, and **Junior Paleontologist Field Quiz**.
 
+7. **Full 9-Language Internationalization (`src/i18n/locales.js` & `src/i18n/speciesLocales.js`)**
+   - Live switcher supporting **English** (`en`), **Spanish** (`es`), **Chinese Mandarin** (`zh-CN`), **Chinese Cantonese** (`zh-HK`), **Italian** (`it`), **Portuguese** (`pt`), **French** (`fr`), **Japanese** (`ja`), and **Korean** (`ko`) across all UI controls, 6 geological eras, 74 prehistoric species, 3D anatomical hotspots, interactive labs, quiz, and Read-Aloud voice narration.
+
+8. **Customizable Viewport, Light/Dark Mode & Hotspot Bubble Controls**
+   - Defaults to a bright museum **Light Mode** with a one-click **☀️ Light / 🌙 Dark** theme switcher, **Full View (`F`)** & **Browser Full Screen** modes, and 3-state **3D Hotspot Description Bubbles (`Full` / `Min` / `Off`)**.
+
 ## Running Locally
 
 ```bash
@@ -35,3 +41,4 @@ python3 server.py 8092
 ```
 
 Then open `http://127.0.0.1:8092` in your browser.
+

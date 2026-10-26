@@ -930,6 +930,13 @@ export class BioAcousticAudio {
   async getTtsStatus() {
     if (this.ttsStatus) return this.ttsStatus;
     if (!this._ttsStatusPromise) {
+      const host = typeof window !== 'undefined' ? window.location.hostname : '';
+      const isStaticCdn = /\.(web\.app|firebaseapp\.com|github\.io)$/i.test(host);
+      if (isStaticCdn) {
+        this.ttsStatus = { available: false };
+        this._ttsStatusPromise = Promise.resolve(this.ttsStatus);
+        return this._ttsStatusPromise;
+      }
       this._ttsStatusPromise = fetch('/api/tts/status', { headers: { 'X-Requested-With': 'DinoVerse' } })
         .then((r) => (r.ok ? r.json() : { available: false }))
         .catch(() => ({ available: false }))

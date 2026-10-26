@@ -1151,8 +1151,8 @@ function renderChicxulubSimulation(val) {
   const cy = h * 0.46;
 
   if (v < 25) {
-    impactReadout.textContent = impLoc.stage1Readout;
-    impactExplanation.textContent = impLoc.stage1Exp;
+    impactReadout.textContent = impLoc.s1Readout;
+    impactExplanation.textContent = impLoc.s1Desc;
 
     ctx.save();
     const t = v / 25;
@@ -1174,8 +1174,8 @@ function renderChicxulubSimulation(val) {
     ctx.fill();
     ctx.restore();
   } else if (v < 55) {
-    impactReadout.textContent = impLoc.stage2Readout;
-    impactExplanation.textContent = impLoc.stage2Exp;
+    impactReadout.textContent = impLoc.s2Readout;
+    impactExplanation.textContent = impLoc.s2Desc;
 
     const progress = (v - 25) / 30;
     const ringRadius = 25 + progress * 240;
@@ -1198,8 +1198,8 @@ function renderChicxulubSimulation(val) {
     ctx.stroke();
     ctx.restore();
   } else if (v < 82) {
-    impactReadout.textContent = impLoc.stage3Readout;
-    impactExplanation.textContent = impLoc.stage3Exp;
+    impactReadout.textContent = impLoc.s3Readout;
+    impactExplanation.textContent = impLoc.s3Desc;
 
     ctx.save();
     ctx.fillStyle = 'rgba(30, 27, 75, 0.68)';
@@ -1207,17 +1207,17 @@ function renderChicxulubSimulation(val) {
     ctx.font = 'bold 18px system-ui, sans-serif';
     ctx.fillStyle = '#fde047';
     ctx.textAlign = 'center';
-    ctx.fillText(impLoc.stage3Canvas, w / 2, h / 2);
+    ctx.fillText(impLoc.s3Canvas, w / 2, h / 2);
     ctx.restore();
   } else {
-    impactReadout.textContent = impLoc.stage4Readout;
-    impactExplanation.textContent = impLoc.stage4Exp;
+    impactReadout.textContent = impLoc.s4Readout;
+    impactExplanation.textContent = impLoc.s4Desc;
 
     ctx.save();
     ctx.font = 'bold 18px system-ui, sans-serif';
     ctx.fillStyle = '#6ee7b7';
     ctx.textAlign = 'center';
-    ctx.fillText(impLoc.stage4Canvas, w / 2, 36);
+    ctx.fillText(impLoc.s4Canvas, w / 2, 36);
     ctx.restore();
   }
 }

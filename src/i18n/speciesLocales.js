@@ -757,6 +757,118 @@ export const SPECIES_TAXONOMY_I18N = {
 };
 
 /**
+ * German ('de') and Arabic ('ar') taxonomy map for all 74 species:
+ * [deMeaning, arName, arMeaning]
+ */
+export const SPECIES_DE_AR_I18N = {
+  // PERMIAN
+  dimetrodon: ['„Zwei Maß Zähne“', 'ديميترودون', '«مقياسان للأسنان»'],
+  edaphosaurus: ['„Pflaster-Echse“', 'إدافوصور', '«سحلية الرصيف»'],
+  inostrancevia: ['„Benannt nach Alexander Inostranzew“', 'إنوسترانسيفيا', '«تيمناً بألكسندر إنوسترانسيف»'],
+  diplocaulus: ['„Doppelter Stiel“', 'ديبلوكاولوس', '«الساق المزدوجة»'],
+  estemmenosuchus: ['„Gekrönter Krokodilier“', 'إستيمينوسوكس', '«التمساح المتوَّج»'],
+  helicoprion: ['„Spiralsäge“', 'هيليكوبريون', '«المنشار اللولبي»'],
+  scutosaurus: ['„Schild-Echse“', 'سكوتوصور', '«سحلية الدرع»'],
+  prionosuchus: ['„Säge-Krokodil“', 'بريونوسوكس', '«تمساح المنشار»'],
+  lystrosaurus: ['„Schaufel-Echse“', 'ليستروصور', '«سحلية المجرفة»'],
+  cotylorhynchus: ['„Becher-Schnauze“', 'كوتيلورينكوس', '«الخطم الكأسي»'],
+  eryops: ['„Langgezogenes Gesicht“', 'إيريوبس', '«الوجه الممدود»'],
+  seymouria: ['„Echse aus Seymour (Texas)“', 'سيموريا', '«سحلية سيمور (تكساس)»'],
+  moschops: ['„Kalbsgesicht“', 'موشوبس', '«وجه العجل»'],
+
+  // TRIASSIC
+  coelophysis: ['„Hohle Gestalt (Hohlknochen)“', 'سيلوفيسيس', '«الشكل المجوَّف (عظام مجوفة)»'],
+  plateosaurus: ['„Breite Echse“', 'بلاتيوصور', '«السحلية العريضة»'],
+  herrerasaurus: ['„Herreras Echse“', 'هيريراصور', '«سحلية هيريرا»'],
+  eoraptor: ['„Jäger der Morgenröte“', 'إيورابتور', '«سارق الفجر»'],
+  postosuchus: ['„Krokodil aus Post (Texas)“', 'بوستوسوكس', '«تمساح بوست (تكساس)»'],
+  nothosaurus: ['„Falsche Echse“', 'نوثوصور', '«السحلية الزائفة»'],
+  tanystropheus: ['„Langgestreckter Wirbel“', 'تانيستروفيوس', '«الفقرة الطويلة الممتدة»'],
+  placodus: ['„Flacher Zahn“', 'بلاكودوس', '«السن المسطحة»'],
+  shonisaurus: ['„Echse aus den Shoshone-Bergen“', 'شونيساوروس', '«سحلية جبال شوشون»'],
+  desmatosuchus: ['„Glieder-Krokodil“', 'ديسماتوسوكس', '«التمساح المترابط»'],
+  eudimorphodon: ['„Echter Zweigestalt-Zahn“', 'إيوديمورفودون', '«ثنائي شكل الأسنان الحقيقي»'],
+  peteinosaurus: ['„Geflügelte Echse“', 'بيتينوصور', '«السحلية المجنحة»'],
+  mastodonsaurus: ['„Brustwarzenzahn-Echse“', 'ماستودونصور', '«سحلية الأسنان الحلمية»'],
+
+  // JURASSIC
+  brachiosaurus: ['„Arm-Echse“', 'براكيوصور', '«سحلية الذراع»'],
+  allosaurus: ['„Andersartige Echse“', 'ألوصور', '«السحلية المختلفة»'],
+  stegosaurus: ['„Dach-Echse“', 'ستيغوصور', '«السحلية المسقوفة»'],
+  archaeopteryx: ['„Uralte Feder / Urvogel“', 'أركيوبتركس', '«الريشة القديمة / الجناح العتيق»'],
+  diplodocus: ['„Doppelbalken“', 'ديبلودوكس', '«العارضة المزدوجة»'],
+  dilophosaurus: ['„Zweikamm-Echse“', 'ديلوفوصور', '«السحلية ذات العرفين»'],
+  ceratosaurus: ['„Horn-Echse“', 'سيراتوصور', '«السحلية القرناء»'],
+  apatosaurus: ['„Täuschende Echse“', 'أباتوصور', '«السحلية الخادعة»'],
+  kentrosaurus: ['„Stachel-Echse“', 'كنتروصور', '«السحلية الشائكة»'],
+  plesiosaurus: ['„Fast-Echse“', 'بليزوصور', '«شبيه السحلية»'],
+  liopleurodon: ['„Glattseitiger Zahn“', 'ليوبلورودون', '«ذو الأسنان الملساء الجوانب»'],
+  ichthyosaurus: ['„Fisch-Echse“', 'إكثيوصور', '«سحلية السمكة»'],
+  rhamphorhynchus: ['„Schnabel-Schnauze“', 'رامفورينكوس', '«الخطم المنقاري»'],
+  compsognathus: ['„Zierlicher Kiefer“', 'كومبسوغناثوس', '«الفك الأنيق»'],
+  camarasaurus: ['„Kammer-Echse“', 'كاماراصور', '«السحلية ذات الحجرات»'],
+
+  // EARLY CRETACEOUS
+  spinosaurus: ['„Dornen-Echse“', 'سبينوصور', '«السحلية الشوكية»'],
+  iguanodon: ['„Leguan-Zahn“', 'إيغوانودون', '«سن الإيغوانا»'],
+  microraptor: ['„Kleiner Räuber“', 'ميكرورابتور', '«اللص الصغير»'],
+  deinonychus: ['„Schreckliche Klaue“', 'دينونيكوس', '«المخلب الرهيب»'],
+  amargasaurus: ['„La-Amarga-Echse“', 'أمارغاصور', '«سحلية لا أمارغا»'],
+  baryonyx: ['„Schwere Klaue“', 'باريونيكس', '«المخلب الثقيل»'],
+  utahraptor: ['„Räuber aus Utah“', 'يوتارابتور', '«مفترس يوتا»'],
+  acanthopholis: ['„Dornenschuppen-Träger“', 'أكانثوفوليس', '«حامل الحراشف الشوكية»'],
+  carcharodontosaurus: ['„Haifischzahn-Echse“', 'كاركارودونتوصور', '«سحلية أسنان القرش»'],
+  concavenator: ['„Jäger aus Cuenca mit Höcker“', 'كونكافيناتور', '«صياد قونكة ذو السنام»'],
+  ouranosaurus: ['„Tapfere Echse“', 'أورانوصور', '«السحلية الشجاعة»'],
+  psittacosaurus: ['„Papageien-Echse“', 'بسيتاكوصور', '«السحلية الببغائية»'],
+  kronosaurus: ['„Echse des Kronos“', 'كرونوصور', '«سحلية كرونوس»'],
+  tapejara: ['„Das alte Wesen“', 'تابيجارا', '«الكائن القديم»'],
+  sarcosuchus: ['„Fleisch-Krokodil“', 'ساركوسوكس', '«تمساح اللحم»'],
+  pterodaustro: ['„Südlicher Flügel“', 'بتيروداوسترو', '«جناح الجنوب»'],
+
+  // LATE CRETACEOUS
+  'tyrannosaurus-rex': ['„König der Tyrannenechsen“', 'تيرانوصور ريكس', '«ملك السحالي الطاغية»'],
+  triceratops: ['„Dreihorn-Gesicht“', 'ترايسيراتوبس', '«الوجه ذو القرون الثلاثة»'],
+  velociraptor: ['„Schneller Räuber“', 'فيلوسيرابتور', '«السارق السريع»'],
+  parasaurolophus: ['„Fast-Kamm-Echse“', 'باراصورولوفوس', '«شبيه السحلية المتوجة»'],
+  ankylosaurus: ['„Verschmolzene / Gepanzerte Echse“', 'أنكيلوصور', '«السحلية الملتحمة المدرعة»'],
+  quetzalcoatlus: ['„Gefiederte Schlange (Quetzalcoatl)“', 'كيتزالكواتلس', '«الثعبان ذو الريش (كيتزالكواتل)»'],
+  mosasaurus: ['„Echse von der Maas“', 'موزاصور', '«سحلية نهر الميز»'],
+  carnotaurus: ['„Fleischfressender Stier“', 'كارنوتوروس', '«الثور آكل اللحوم»'],
+  therizinosaurus: ['„Sensen-Echse“', 'ثيريزينوصور', '«سحلية المنجل»'],
+  pachycephalosaurus: ['„Dickschädel-Echse“', 'باكيسيفالوصور', '«السحلية سميكة الرأس»'],
+  pteranodon: ['„Zahnloser Flügel“', 'بتيرانودون', '«الجناح عديم الأسنان»'],
+  giganotosaurus: ['„Riesige südliche Echse“', 'جيغانوتوصور', '«سحلية الجنوب العملاقة»'],
+  argentinosaurus: ['„Silberland-Echse (Argentinien)“', 'أرجنتينوصور', '«سحلية الأرجنتين»'],
+  gallimimus: ['„Hühner-Nachahmer“', 'غاليميموس', '«مُقلِّد الدجاج»'],
+  deinosuchus: ['„Schreckliches Krokodil“', 'دينوسوكس', '«التمساح الرهيب»'],
+  elasmosaurus: ['„Dünnplatten-Echse“', 'إلاسموصور', '«سحلية الصفيحة الرقيقة»'],
+  mussaurus: ['„Maus-Echse“', 'موساصور', '«سحلية الفأر»'],
+  dimorphodon: ['„Zweigestalt-Zahn“', 'ديمورفودون', '«ثنائي شكل الأسنان»'],
+  cryolophosaurus: ['„Gefrorene Kamm-Echse“', 'كريولوفوصور («إلفيسوصور»)', '«السحلية المتوجة المتجمدة»'],
+  tuojiangosaurus: ['„Tuo-Fluss-Echse“', 'توجيانغوصور', '«سحلية نهر تو»'],
+  brontosaurus: ['„Edle Donnerechse“', 'برونتوصور', '«سحلية الرعد النبيلة»'],
+  yutyrannus: ['„Schöner gefiederter Tyrann“', 'يوتيرانوس', '«الطاغية الجميل ذو الريش»'],
+  suchomimus: ['„Krokodil-Nachahmer“', 'سوكوميموس', '«مُقلِّد التمساح»'],
+  acrocanthosaurus: ['„Hochdorn-Echse“', 'أكروكانثوصور', '«السحلية ذات الأشواك العالية»'],
+  sauropelta: ['„Schild-Echse“', 'سوروبيلتا', '«درع السحلية»'],
+  dreadnoughtus: ['„Fürchtet nichts“', 'دريدنوتوس', '«الذي لا يخشى شيئاً»'],
+  maiasaura: ['„Gute Mutter-Echse“', 'ماياسورا', '«السحلية الأم الصالحة»'],
+  corythosaurus: ['„Korinthischer-Helm-Echse“', 'كوريثوصور', '«سحلية الخوذة الكورنثية»'],
+  styracosaurus: ['„Stachel-Echse“', 'ستيراكوصور', '«السحلية الشائكة»'],
+  oviraptor: ['„Eier-Greifer (Fürsorglicher Elternteil)“', 'أوفيرابتور / سيتيباتي', '«سارق البيض (الأب الحنون)»'],
+  protoceratops: ['„Erstes Horngesicht“', 'بروتوسيراتوبس', '«الوجه الأوّل ذو القرون»'],
+  pachyrhinosaurus: ['„Dicknasen-Echse“', 'باكيرينوصور', '«السحلية سميكة الأنف»'],
+  edmontosaurus: ['„Echse aus Edmonton“', 'إدمونتوصور', '«سحلية إدمونتون»'],
+  stygimoloch: ['„Gehörnter Dämon vom Fluss Styx“', 'ستيجيمولوك', '«شيطان نهر ستيكس ذو القرون»'],
+  hesperornis: ['„Königlicher Westlicher Vogel“', 'هيسبيرورنيس', '«الطائر الغربي الملكي»'],
+
+  // K-PG EXTINCTION
+  'chicxulub-avian-survivor': ['„Überlebende Vogel-Theropoden (Neornithes)“', 'حدث انقراض تشيكشولوب والطيور الناجية', '«الديناصورات الطيرية الناجية (الطيور الحديثة)»'],
+  gastornis: ['„Gaston Plantés Riesenvogel“', 'غاستورنيس', '«طائر غاستون بلانتيه العملاق»'],
+};
+
+/**
  * Localizes geological period strings like "Late Cretaceous (68–66 MYA)".
  */
 export function localizePeriodLabel(raw, lang = 'en') {
@@ -883,6 +995,46 @@ export function localizePeriodLabel(raw, lang = 'en') {
       ['Late Cretaceous', 'Crétacé Supérieur'],
       ['MYA', 'Ma'],
     ],
+    de: [
+      ['Late Carboniferous – Early Permian', 'Oberkarbon – Unterperm'],
+      ['Late Permian – Early Triassic', 'Oberperm – Untertrias'],
+      ['Late Triassic – Early Jurassic', 'Obertrias – Unterjura'],
+      ['Middle – Late Jurassic', 'Mittel- bis Oberjura'],
+      ['Paleocene – Eocene', 'Paläozän – Eozän'],
+      ['Post-Asteroid Era', 'Post-Asteroiden-Ära'],
+      ['66 MYA Impact → Present Day (11,000+ Species)', 'Einschlag vor 66 Mio. J. → Heute (11.000+ Arten)'],
+      ['Early Permian', 'Unterperm'],
+      ['Late Permian', 'Oberperm'],
+      ['Early Triassic', 'Untertrias'],
+      ['Late Triassic', 'Obertrias'],
+      ['Early Jurassic', 'Unterjura'],
+      ['Late Jurassic', 'Oberjura'],
+      ['Early Cretaceous', 'Unterkreide'],
+      ['Mid Cretaceous', 'Mittelkreide'],
+      ['Late Cretaceous South America', 'Oberkreide Südamerikas'],
+      ['Late Cretaceous', 'Oberkreide'],
+      ['MYA', 'Mio. J.'],
+    ],
+    ar: [
+      ['Late Carboniferous – Early Permian', 'الكربوني المتأخر – البرمي المبكر'],
+      ['Late Permian – Early Triassic', 'البرمي المتأخر – الثلاثي المبكر'],
+      ['Late Triassic – Early Jurassic', 'الثلاثي المتأخر – الجوراسي المبكر'],
+      ['Middle – Late Jurassic', 'الجوراسي الأوسط – المتأخر'],
+      ['Paleocene – Eocene', 'الباليوسيني – الإيوسيني'],
+      ['Post-Asteroid Era', 'حقبة ما بعد الكويكب'],
+      ['66 MYA Impact → Present Day (11,000+ Species)', 'اصطدام قبل 66 مليون سنة ← الحاضر (+11,000 نوع)'],
+      ['Early Permian', 'البرمي المبكر'],
+      ['Late Permian', 'البرمي المتأخر'],
+      ['Early Triassic', 'الثلاثي المبكر'],
+      ['Late Triassic', 'الثلاثي المتأخر'],
+      ['Early Jurassic', 'الجوراسي المبكر'],
+      ['Late Jurassic', 'الجوراسي المتأخر'],
+      ['Early Cretaceous', 'الطباشيري المبكر'],
+      ['Mid Cretaceous', 'الطباشيري الأوسط'],
+      ['Late Cretaceous South America', 'الطباشيري المتأخر لأمريكا الجنوبية'],
+      ['Late Cretaceous', 'الطباشيري المتأخر'],
+      ['MYA', 'مليون سنة'],
+    ],
     ja: [
       ['Late Carboniferous – Early Permian', '石炭紀後期 – ペルム紀前期'],
       ['Late Permian – Early Triassic', 'ペルム紀後期 – 三畳紀前期'],
@@ -942,6 +1094,7 @@ export function getLocalizedSpecies(sp, era, lang = 'en') {
   const ui = UI_STRINGS[lang] || UI_STRINGS.en;
   const eraLoc = ERA_LOCALIZATIONS[lang]?.[sp.eraId] || ERA_LOCALIZATIONS.en[sp.eraId] || era;
   const tax = SPECIES_TAXONOMY_I18N[sp.id];
+  const deArTax = SPECIES_DE_AR_I18N[sp.id];
 
   let localName = sp.name;
   let localMeaning = sp.meaning;
@@ -961,21 +1114,32 @@ export function getLocalizedSpecies(sp, era, lang = 'en') {
       localName = koName;
       localMeaning = koMean;
     } else if (lang === 'es') {
+      localName = sp.name.replace(/\s*\([^)]+\)/g, '').trim();
       if (sp.id === 'tyrannosaurus-rex') localName = 'Tiranosaurio Rex';
       if (sp.id === 'chicxulub-avian-survivor') localName = 'Impacto K-Pg y Aves Supervivientes';
       localMeaning = esMean;
     } else if (lang === 'it') {
+      localName = sp.name.replace(/\s*\([^)]+\)/g, '').trim();
       if (sp.id === 'tyrannosaurus-rex') localName = 'Tirannosauro Rex';
       if (sp.id === 'chicxulub-avian-survivor') localName = 'Impatto K-Pg e Uccelli Sopravvissuti';
       localMeaning = itMean;
     } else if (lang === 'pt') {
+      localName = sp.name.replace(/\s*\([^)]+\)/g, '').trim();
       if (sp.id === 'tyrannosaurus-rex') localName = 'Tiranossauro Rex';
       if (sp.id === 'chicxulub-avian-survivor') localName = 'Impacto K-Pg e Aves Sobreviventes';
       localMeaning = ptMean;
     } else if (lang === 'fr') {
+      localName = sp.name.replace(/\s*\([^)]+\)/g, '').trim();
       if (sp.id === 'tyrannosaurus-rex') localName = 'Tyrannosaure Rex';
       if (sp.id === 'chicxulub-avian-survivor') localName = 'Impact K-Pg & Oiseaux Survivants';
       localMeaning = frMean;
+    } else if (lang === 'de' && deArTax) {
+      localName = sp.name.replace(/\s*\([^)]+\)/g, '').trim();
+      if (sp.id === 'chicxulub-avian-survivor') localName = 'K-Pg-Einschlag & Überlebende Vögel';
+      localMeaning = deArTax[0];
+    } else if (lang === 'ar' && deArTax) {
+      localName = deArTax[1];
+      localMeaning = deArTax[2];
     }
   }
 
@@ -1068,6 +1232,8 @@ function localizeHotspotTitle(h, lang) {
       it: 'Cranio, Mascella e Dentatura',
       pt: 'Crânio, Mandíbula e Dentição',
       fr: 'Crâne, Mâchoires et Dentition',
+      de: 'Schädel, Kiefer & Gebissanatomie',
+      ar: 'تشريح الجمجمة والفكين والأسنان',
       ja: '頭骨・顎・歯列の解剖構造',
       ko: '두개골·턱·치열 해부 구조',
     },
@@ -1078,6 +1244,8 @@ function localizeHotspotTitle(h, lang) {
       it: 'Cresta Cranica, Corna e Collare Osseo',
       pt: 'Crista Craniana, Chifres e Escudo Ósseo',
       fr: 'Crête Crânienne, Cornes et Collerette',
+      de: 'Schädelkamm, Hörner & Nackenschild',
+      ar: 'العرف الجمجمي والقرون والدرع العنقي',
       ja: '頭部のトサカ・角・フリル構造',
       ko: '머리 볏·뿔·프릴 골격 구조',
     },
@@ -1088,6 +1256,8 @@ function localizeHotspotTitle(h, lang) {
       it: 'Vela Dorsale, Piastre e Corazza Dermica',
       pt: 'Vela Dorsal, Placas e Armadura Dérmica',
       fr: 'Voile Dorsale, Plaques et Armure Dermique',
+      de: 'Rückensegel, Knochenplatten & Hautpanzer',
+      ar: 'الشراع الظهري والصفائح العظمية والدرع الجلدي',
       ja: '背帆・骨板・装甲プレート構造',
       ko: '등 돛·골판·피부 갑옷 구조',
     },
@@ -1098,6 +1268,8 @@ function localizeHotspotTitle(h, lang) {
       it: 'Vertebre Cervicali e Collo Pneumatico',
       pt: 'Vértebras Cervicais e Pescoço Pneumático',
       fr: 'Vertèbres Cervicales et Cou Pneumatique',
+      de: 'Halswirbel & Pneumatisches Luftsacksystem',
+      ar: 'الفقرات العنقية ونظام الأكياس الهوائية',
       ja: '頸椎と気嚢システムの解剖構造',
       ko: '경추 및 기낭 목 골격 구조',
     },
@@ -1108,6 +1280,8 @@ function localizeHotspotTitle(h, lang) {
       it: 'Membrana Alare, Piume e Aerodinamica',
       pt: 'Membrana Alar, Penas e Aerodinâmica',
       fr: 'Membrane Alaire, Plumes et Aérodynamique',
+      de: 'Flughaut, Schwungfedern & Aerodynamik',
+      ar: 'غشاء الجناح وريش الطيران والديناميكا الهوائية',
       ja: '翼膜・風切羽・飛行バイオメカニクス',
       ko: '날개막·깃털·비행 생체역학 구조',
     },
@@ -1118,6 +1292,8 @@ function localizeHotspotTitle(h, lang) {
       it: 'Pinne Idrodinamiche e Propulsione Marina',
       pt: 'Nadadeiras Hidrodinâmicas e Propulsão',
       fr: 'Nageoires Hydrodynamiques et Propulsion',
+      de: 'Hydrodynamische Flossen & Wasserantrieb',
+      ar: 'الزعانف الهيدروديناميكية والدفع المائي',
       ja: 'ヒレ脚・水中推進の流体力学構造',
       ko: '물갈퀴 지느러미 및 수중 추진 구조',
     },
@@ -1128,6 +1304,8 @@ function localizeHotspotTitle(h, lang) {
       it: 'Artigli Ricurvi e Arti Anteriori',
       pt: 'Garras Curvas e Membros Anteriores',
       fr: 'Griffes Recourbées et Membres Antérieurs',
+      de: 'Sichelklauen & Vordergliedmaßen-Anatomie',
+      ar: 'المخالب المنحنية وتشريح الأطراف الأمامية',
       ja: '前肢と鉤爪（かぎづめ）の解剖構造',
       ko: '앞다리 및 갈고리 발톱 해부 구조',
     },
@@ -1138,6 +1316,8 @@ function localizeHotspotTitle(h, lang) {
       it: 'Arti Posteriori e Biomeccanica Locomotoria',
       pt: 'Membros Posteriores e Locomoção',
       fr: 'Membres Postérieurs et Locomotion',
+      de: 'Hintergliedmaßen & Fortbewegungs-Biomechanik',
+      ar: 'الأطراف الخلفية والميكانيكا الحيوية للحركة',
       ja: '後肢骨格と歩行・走行バイオメカニクス',
       ko: '뒷다리 골격 및 보행 생체역학 구조',
     },
@@ -1148,6 +1328,8 @@ function localizeHotspotTitle(h, lang) {
       it: 'Coda Biomeccanica, Contrappeso e Difesa',
       pt: 'Cauda Biomecânica, Contrapeso e Defesa',
       fr: 'Queue Biomécanique, Contrepoids et Défense',
+      de: 'Biomechanischer Schwanz, Gegengewicht & Abwehr',
+      ar: 'الذيل الميكانيكي الحيوي والتوازن والدفاع',
       ja: '尾椎バランスと尾部防衛器官の解剖',
       ko: '꼬리뼈 균형 및 꼬리 방어 기관 구조',
     },
@@ -1158,6 +1340,8 @@ function localizeHotspotTitle(h, lang) {
       it: 'Scheletro Assiale e Struttura Toracica',
       pt: 'Esqueleto Axial e Estrutura Torácica',
       fr: 'Squelette Axial et Cage Thoracique',
+      de: 'Achsenskelett & Brustkorb-Struktur',
+      ar: 'الهيكل المحوري وبنية القفص الصدري',
       ja: '脊椎・胴体フレームの骨格構造',
       ko: '척추 및 몸통 골격 프레임 구조',
     },
@@ -1349,6 +1533,60 @@ function composeLocalizedBiology({
       whatIfLabel: `⚡ Déclencher l’Action Biomécanique de ${localName}`,
       whatIfOutcome: `${localName} déploie toute sa puissance biomécanique (${m.speedKmh} km/h • ${m.biteForceN.toLocaleString()} N) !`,
       vocalDescription: `Appel bio-acoustique préhistorique de ${localName} (${sp.vocalProfile?.baseFreq || 120} Hz)`,
+      discoveryText,
+    };
+  }
+
+  if (lang === 'de') {
+    return {
+      name: localName,
+      meaning: localMeaning,
+      periodLabel: localPeriod,
+      dietLabel: localDiet,
+      domainLabel: localDomain,
+      stanceLabel: localStance,
+      story: `${localName} (${sp.scientificName}, Bedeutung: ${localMeaning}) lebte im Zeitabschnitt ${localPeriod} – vor rund ${sp.paleoMa} Millionen Jahren, in der Ära „${eraName}“. Dieser ${localDiet} aus der Klade ${sp.clade} erreichte eine Körperlänge von ${m.lengthM} Metern, eine Höhe von ${m.heightM} Metern und ein Gewicht von ${m.weightLabel}. Fortbewegung: ${localStance}, mit bis zu ${m.speedKmh} km/h. Lebensraum: ${eraFlora}.`,
+      funFacts: [
+        `Seine Fossilien wurden ${d.year} von ${d.paleontologist} in ${d.location} (${d.country}) entdeckt (Fundschicht: ${d.formation}).`,
+        `Biomechanische Modelle berechnen eine Höchstgeschwindigkeit von ${m.speedKmh} km/h und eine Beißkraft von ${m.biteForceN.toLocaleString()} N.`,
+        `Er lebte in einer urzeitlichen Atmosphäre mit ${c.o2Pct} % Sauerstoff, ${c.co2Ppm} ppm CO₂ und einer Durchschnittstemperatur von +${c.tempC} °C.`,
+      ],
+      hotspots: hsRaw.map((h) => ({
+        pos: h.pos,
+        title: localizeHotspotTitle(h, 'de'),
+        organOrBone: h.organOrBone,
+        detail: `Wichtige osteologische Anpassung von ${localName} (${h.organOrBone}) – ein Überlebensvorteil in der Ära „${eraName}“.`,
+      })),
+      whatIfLabel: `⚡ Biomechanische Aktion von ${localName} auslösen`,
+      whatIfOutcome: `${localName} entfesselt seine volle biomechanische Kraft (${m.speedKmh} km/h • ${m.biteForceN.toLocaleString()} N)!`,
+      vocalDescription: `Prähistorischer Bioakustik-Ruf von ${localName} (${sp.vocalProfile?.baseFreq || 120} Hz)`,
+      discoveryText,
+    };
+  }
+
+  if (lang === 'ar') {
+    return {
+      name: localName,
+      meaning: localMeaning,
+      periodLabel: localPeriod,
+      dietLabel: localDiet,
+      domainLabel: localDomain,
+      stanceLabel: localStance,
+      story: `عاش ${localName} (${sp.scientificName}، ومعنى اسمه ${localMeaning}) خلال فترة ${localPeriod} قبل نحو ${sp.paleoMa} مليون سنة (${eraName}). وهو ${localDiet} ${localStance} من فرع ${sp.clade}، بلغ طوله ${m.lengthM} م وارتفاعه ${m.heightM} م ووزنه نحو ${m.weightLabel}، وكانت سرعته تصل إلى ${m.speedKmh} كم/س. موطنه: ${eraFlora}.`,
+      funFacts: [
+        `اكتشف ${d.paleontologist} حفرياته عام ${d.year} في ${d.location} (${d.country})، ضمن طبقات ${d.formation}.`,
+        `تُقدّر النماذج الميكانيكية الحيوية سرعته القصوى بنحو ${m.speedKmh} كم/س وقوة عضته بنحو ${m.biteForceN.toLocaleString()} نيوتن (N).`,
+        `عاش في غلاف جوي قديم بنسبة أكسجين ${c.o2Pct}% وثاني أكسيد الكربون ${c.co2Ppm} جزء في المليون ومتوسط حرارة +${c.tempC} درجة مئوية.`,
+      ],
+      hotspots: hsRaw.map((h) => ({
+        pos: h.pos,
+        title: localizeHotspotTitle(h, 'ar'),
+        organOrBone: h.organOrBone,
+        detail: `تكيّف عظمي وتشريحي رئيسي لدى ${localName} (${h.organOrBone}) للبقاء في بيئة ${eraName}.`,
+      })),
+      whatIfLabel: `⚡ تفعيل الحركة الميكانيكية الحيوية لـ ${localName}`,
+      whatIfOutcome: `يطلق ${localName} أقصى قوته الميكانيكية الحيوية (${m.speedKmh} كم/س • قوة عضّ ${m.biteForceN.toLocaleString()} نيوتن)!`,
+      vocalDescription: `محاكاة النداء الصوتي الحيوي القديم لـ ${localName} (${sp.vocalProfile?.baseFreq || 120} Hz)`,
       discoveryText,
     };
   }

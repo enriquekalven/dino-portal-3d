@@ -2284,3 +2284,56 @@ html[data-backdrop="dark"] .atlas-card-ma {
     transition: none !important;
   }
 }
+
+/* ============================================================================
+   ARABIC (RTL) SUPPORT
+   Text panels, controls and modals render right-to-left so Arabic reads
+   naturally and mixed tokens such as "3D", "(74)" or Latin species names stay
+   in reading order. The page grid, 3D canvas, floating hotspot pins and range
+   sliders keep their left-to-right geometry, so screen-projected 3D
+   coordinates are unaffected.
+   ============================================================================ */
+html[lang="ar"] .brand-subtitle,
+html[lang="ar"] .era-tab-btn,
+html[lang="ar"] .top-action-btn,
+html[lang="ar"] .theme-mode-btn,
+html[lang="ar"] .left-roster-panel,
+html[lang="ar"] .right-inspector-panel,
+html[lang="ar"] .mode-switcher-pill,
+html[lang="ar"] .viewport-quick-bar,
+html[lang="ar"] .era-context-banner,
+html[lang="ar"] .whatif-toast,
+html[lang="ar"] .bottom-control-dock,
+html[lang="ar"] .mobile-tabbar,
+html[lang="ar"] .modal-card {
+  direction: rtl;
+}
+
+/* These hard-code left alignment for LTR languages */
+html[lang="ar"] .species-card-item,
+html[lang="ar"] .whatif-toast-text,
+html[lang="ar"] .hotspot-detail-card,
+html[lang="ar"] .quiz-opt-btn,
+html[lang="ar"] .atlas-card {
+  text-align: right;
+}
+
+html[lang="ar"] .facts-list {
+  padding-left: 0;
+  padding-right: 16px;
+}
+
+/* Numeric readouts ("27 m (89 ft)", "20 km/h • 2,800 N") keep number-then-unit order */
+html[lang="ar"] .metric-val,
+html[lang="ar"] .scale-bar-label-row > span:last-child {
+  direction: ltr;
+  unicode-bidi: isolate;
+  text-align: right;
+}
+
+/* Timeline sliders and the (Latin-named) narrator voice picker keep LTR behaviour */
+html[lang="ar"] input[type="range"],
+html[lang="ar"] #narrator-voice-select {
+  direction: ltr;
+}
+

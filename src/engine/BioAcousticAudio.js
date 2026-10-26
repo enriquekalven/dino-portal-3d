@@ -1042,6 +1042,8 @@ export class BioAcousticAudio {
       it: 'it-IT',
       pt: 'pt-BR',
       fr: 'fr-FR',
+      de: 'de-DE',
+      ar: 'ar-SA',
       ja: 'ja-JP',
       ko: 'ko-KR',
     };

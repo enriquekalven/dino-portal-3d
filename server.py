@@ -142,6 +142,8 @@ class ChirpSynthesizer:
         "it": ("it-IT", "it-IT-Chirp3-HD-Aoede"),
         "pt": ("pt-BR", "pt-BR-Chirp3-HD-Aoede"),
         "fr": ("fr-FR", "fr-FR-Chirp3-HD-Aoede"),
+        "de": ("de-DE", "de-DE-Chirp3-HD-Aoede"),
+        "ar": ("ar-XA", "ar-XA-Chirp3-HD-Aoede"),
         "ja": ("ja-JP", "ja-JP-Chirp3-HD-Aoede"),
         "ko": ("ko-KR", "ko-KR-Chirp3-HD-Aoede"),
     }

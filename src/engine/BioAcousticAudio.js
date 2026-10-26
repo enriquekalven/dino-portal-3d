@@ -46,6 +46,7 @@ export class BioAcousticAudio {
     this.unlocked = false;
 
     this.isSpeaking = false;
+    this.language = 'en';
     this.narrationMode = 'chirp'; // 'chirp' | 'device'
     this.voiceName = DEFAULT_CHIRP_VOICE;
     this.ttsStatus = null;
@@ -206,6 +207,12 @@ export class BioAcousticAudio {
       this.voiceName = voiceId;
     }
     this._savePrefs();
+  }
+
+  setLanguage(langCode) {
+    if (typeof langCode === 'string' && langCode.trim()) {
+      this.language = langCode.trim();
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -938,12 +945,12 @@ export class BioAcousticAudio {
   }
 
   async _fetchChirp(text, signal) {
-    const key = `${this.voiceName}|${text}`;
+    const key = `${this.language}|${this.voiceName}|${text}`;
     if (this._narrationCache.has(key)) return this._narrationCache.get(key);
     const response = await fetch('/api/tts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'DinoVerse' },
-      body: JSON.stringify({ text, voice: this.voiceName, rate: 0.95 }),
+      body: JSON.stringify({ text, voice: this.voiceName, lang: this.language, rate: 0.95 }),
       signal,
     });
     if (!response.ok || !(response.headers.get('Content-Type') || '').startsWith('audio/')) {
@@ -1019,10 +1026,50 @@ export class BioAcousticAudio {
     this._speakWithDevice(clean, notify);
   }
 
+  _getBcp47ForLang() {
+    const map = {
+      en: 'en-US',
+      es: 'es-ES',
+      'zh-CN': 'zh-CN',
+      'zh-HK': 'zh-HK',
+      it: 'it-IT',
+      pt: 'pt-BR',
+      fr: 'fr-FR',
+      ja: 'ja-JP',
+      ko: 'ko-KR',
+    };
+    return map[this.language] || 'en-US';
+  }
+
   _pickDeviceVoice() {
     if (!('speechSynthesis' in window)) return null;
     const voices = window.speechSynthesis.getVoices() || [];
     if (!voices.length) return null;
+
+    const lang = this.language || 'en';
+    if (lang === 'zh-HK') {
+      const cantonese = voices.filter(
+        (v) => /^(yue|zh[-_](HK|MO))/i.test(v.lang) || /Cantonese|Hong Kong|Sin-ji|Sinji|HiuGaai|HiuMaan|WanLung|粵|粤/i.test(v.name)
+      );
+      if (cantonese.length) return cantonese[0];
+      const trad = voices.filter((v) => /^zh[-_]TW/i.test(v.lang));
+      if (trad.length) return trad[0];
+    } else if (lang === 'zh-CN') {
+      const mandarin = voices.filter(
+        (v) => /^(cmn|zh[-_](CN|SG))/i.test(v.lang) || /Ting-Ting|Tingting|Meijia|Xiaoxiao|Putonghua|Mandarin|普通话/i.test(v.name)
+      );
+      if (mandarin.length) return mandarin[0];
+      const anyZh = voices.filter((v) => /^zh/i.test(v.lang));
+      if (anyZh.length) return anyZh[0];
+    } else if (lang !== 'en') {
+      const prefix = lang.split('-')[0].toLowerCase();
+      const matching = voices.filter((v) => (v.lang || '').toLowerCase().startsWith(prefix));
+      const naturalHit = matching.find((v) => /Google|Natural|Enhanced|Premium|Siri/i.test(v.name));
+      if (naturalHit) return naturalHit;
+      if (matching.length) return matching[0];
+      return null;
+    }
+
     const prefs = [/Google US English/i, /Samantha/i, /Ava/i, /Allison/i, /Zoe/i, /Natural/i, /Enhanced/i, /Premium/i, /Karen/i, /Moira/i, /Daniel/i];
     const en = voices.filter((v) => /^en[-_]US/i.test(v.lang));
     const anyEn = voices.filter((v) => /^en/i.test(v.lang));
@@ -1042,6 +1089,7 @@ export class BioAcousticAudio {
     }
     const speak = () => {
       const utterance = new SpeechSynthesisUtterance(text);
+      utterance.lang = this._getBcp47ForLang();
       const voice = this._pickDeviceVoice();
       if (voice) utterance.voice = voice;
       utterance.rate = 0.95;

@@ -134,9 +134,30 @@ class ChirpSynthesizer:
             self._request_times.append(now)
             return False
 
-    def synthesize(self, text: str, voice: str, rate: float):
+    LANG_VOICE_MAP = {
+        "en": ("en-US", None),
+        "es": ("es-ES", "es-ES-Chirp3-HD-Aoede"),
+        "zh-CN": ("cmn-CN", "cmn-CN-Chirp3-HD-Aoede"),
+        "zh-HK": ("yue-HK", "yue-HK-Standard-A"),
+        "it": ("it-IT", "it-IT-Chirp3-HD-Aoede"),
+        "pt": ("pt-BR", "pt-BR-Chirp3-HD-Aoede"),
+        "fr": ("fr-FR", "fr-FR-Chirp3-HD-Aoede"),
+        "ja": ("ja-JP", "ja-JP-Chirp3-HD-Aoede"),
+        "ko": ("ko-KR", "ko-KR-Chirp3-HD-Aoede"),
+    }
+
+    def synthesize(self, text: str, voice: str, rate: float, lang: str = "en"):
         """Returns (status_code, payload_bytes_or_error_dict, content_type)."""
-        key = hashlib.sha256(f"{voice}|{rate:.2f}|{text}".encode("utf-8")).hexdigest()
+        lang_code, default_lang_voice = self.LANG_VOICE_MAP.get(lang, ("en-US", None))
+        persona = voice.split("-")[-1] if "-" in voice else "Aoede"
+        if lang == "en" or not default_lang_voice:
+            resolved_voice = voice
+        elif lang == "zh-HK":
+            resolved_voice = default_lang_voice
+        else:
+            resolved_voice = f"{lang_code}-Chirp3-HD-{persona}"
+
+        key = hashlib.sha256(f"{lang_code}|{resolved_voice}|{rate:.2f}|{text}".encode("utf-8")).hexdigest()
         with self._cache_lock:
             cached = self._cache.get(key)
             if cached is not None:
@@ -148,10 +169,18 @@ class ChirpSynthesizer:
 
         body = {
             "input": {"text": text},
-            "voice": {"languageCode": "en-US", "name": voice},
+            "voice": {"languageCode": lang_code, "name": resolved_voice},
             "audioConfig": {"audioEncoding": "MP3", "speakingRate": rate},
         }
         audio = self._request(body)
+        if isinstance(audio, dict) and lang != "en":
+            # Fallback to standard language voice if Chirp3-HD persona is unavailable in that region
+            fallback_body = {
+                "input": {"text": text},
+                "voice": {"languageCode": lang_code},
+                "audioConfig": {"audioEncoding": "MP3", "speakingRate": rate},
+            }
+            audio = self._request(fallback_body)
         if isinstance(audio, dict):
             return audio.get("status", 502), {"error": audio.get("error", "tts_failed")}, "application/json"
 
@@ -339,13 +368,15 @@ class SecureStaticHandler(SimpleHTTPRequestHandler):
             self._send_json(400, {"error": "empty_text"})
             return
         voice = payload.get("voice") if payload.get("voice") in TTS_ALLOWED_VOICES else TTS_DEFAULT_VOICE
+        raw_lang = payload.get("lang", "en")
+        lang = raw_lang if isinstance(raw_lang, str) and raw_lang in SYNTH.LANG_VOICE_MAP else "en"
         try:
             rate = float(payload.get("rate", 0.95))
         except (TypeError, ValueError):
             rate = 0.95
         rate = max(0.7, min(1.25, rate))
 
-        status, body, mime = SYNTH.synthesize(text, voice, rate)
+        status, body, mime = SYNTH.synthesize(text, voice, rate, lang=lang)
         if status != 200:
             self._send_json(status, body)
             return

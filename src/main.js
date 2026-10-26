@@ -2,18 +2,61 @@ import { ERAS, SPECIES, QUIZ_QUESTIONS } from './data/dinosaurs.js';
 import { DinoWorldEngine } from './engine/DinoWorldEngine.js';
 import { renderContinentalDriftTexture } from './engine/HyperRealKit.js';
 import { BioAcousticAudio, CHIRP_VOICE_PRESETS } from './engine/BioAcousticAudio.js';
+import {
+  SUPPORTED_LANGUAGES,
+  resolveSupportedLang,
+  UI_STRINGS,
+  ERA_LOCALIZATIONS,
+  getLocalizedDriftDescription,
+  IMPACT_STAGE_LOCALIZATIONS,
+  QUIZ_LOCALIZATIONS,
+} from './i18n/locales.js';
+import { getLocalizedSpecies } from './i18n/speciesLocales.js';
 
 /**
- * main.js — Safe DOM Controller for DinoVerse 3D.
+ * main.js — Safe DOM Controller for DinoVerse 3D (9-Language Internationalized Edition).
  * Built strictly with createElement / textContent / replaceChildren (zero innerHTML).
  */
 
+const LANG_STORAGE_KEY = 'dinoverse-lang';
 const discoveredSpecies = new Set(['tyrannosaurus-rex']);
 let currentFilter = 'all';
 let currentSearch = '';
 let activeHotspotIndex = -1;
+let lastTtsStatus = null;
+
+// Resolve initial language from localStorage or browser locale (defaults to English 'en')
+let currentLang = 'en';
+try {
+  const savedLang = localStorage.getItem(LANG_STORAGE_KEY);
+  if (savedLang) {
+    currentLang = resolveSupportedLang(savedLang);
+  }
+} catch {
+  // Ignore storage restrictions
+}
 
 const audio = new BioAcousticAudio();
+audio.setLanguage(currentLang);
+
+function ui() {
+  return UI_STRINGS[currentLang] || UI_STRINGS.en;
+}
+
+function getEraLoc(era) {
+  if (!era) return { name: '', timeRange: '', flora: '' };
+  const loc = ERA_LOCALIZATIONS[currentLang]?.[era.id];
+  return {
+    name: loc?.name || era.name,
+    timeRange: loc?.timeRange || era.timeRange,
+    flora: loc?.flora || era.flora,
+  };
+}
+
+function getSpLoc(sp, era) {
+  const resolvedEra = era || ERAS.find((e) => e.id === sp?.eraId);
+  return getLocalizedSpecies(sp, resolvedEra, currentLang);
+}
 
 // DOM Elements
 const canvas = document.getElementById('dino-canvas');
@@ -56,6 +99,7 @@ const btnTriggerWhatif = document.getElementById('btn-trigger-whatif');
 const btnToggleAmbience = document.getElementById('btn-toggle-ambience');
 const btnThemeLight = document.getElementById('btn-theme-light');
 const btnThemeDark = document.getElementById('btn-theme-dark');
+const langSelect = document.getElementById('lang-select');
 const narratorVoiceSelect = document.getElementById('narrator-voice-select');
 const narratorVoiceStatus = document.getElementById('narrator-voice-status');
 
@@ -176,10 +220,11 @@ const engine = new DinoWorldEngine(canvas, ERAS, SPECIES, {
 }, { backdropTheme: initialBackdrop });
 
 function updatePassportCounter() {
-  // "Discovered" lives in a .lbl-long span so narrow screens can drop it (same text on desktop).
+  const s = ui();
   const suffix = document.createElement('span');
   suffix.className = 'lbl-long';
-  suffix.textContent = ' Discovered';
+  suffix.textContent = s.discoveredSuffix;
+  passportCounter.title = s.passportTitle;
   passportCounter.replaceChildren(`🦴 ${discoveredSpecies.size} / ${SPECIES.length}`, suffix);
 }
 
@@ -187,20 +232,25 @@ function updatePassportCounter() {
 // 1. TOP ERA TABS NAVIGATION
 // -----------------------------------------------------------------------------
 function renderEraTabs() {
+  const activeEraId = ERAS[engine.activeEraIndex]?.id || engine.activeSpecies?.eraId;
   eraTabsNav.replaceChildren();
   ERAS.forEach((era) => {
+    const loc = getEraLoc(era);
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'era-tab-btn';
+    if (activeEraId === era.id) {
+      btn.classList.add('active');
+    }
     btn.dataset.eraId = era.id;
 
     const topSpan = document.createElement('span');
     topSpan.className = 'era-tab-top';
-    topSpan.textContent = `${era.number}. ${era.name}`;
+    topSpan.textContent = `${era.number}. ${loc.name}`;
 
     const subSpan = document.createElement('span');
     subSpan.className = 'era-tab-sub';
-    subSpan.textContent = era.timeRange;
+    subSpan.textContent = loc.timeRange;
 
     btn.appendChild(topSpan);
     btn.appendChild(subSpan);
@@ -225,26 +275,28 @@ function updateEraTabsUI(activeEraId) {
 }
 
 function updateEraBanner(era) {
+  const loc = getEraLoc(era);
   const range = document.createElement('span');
   range.className = 'lbl-long';
-  range.textContent = ` (${era.timeRange})`;
-  bannerEraName.replaceChildren(era.name, range);
-  bannerEraFlora.textContent = era.flora;
+  range.textContent = ` (${loc.timeRange})`;
+  bannerEraName.replaceChildren(loc.name, range);
+  bannerEraFlora.textContent = loc.flora;
 }
 
 // -----------------------------------------------------------------------------
-// 2. LEFT PANEL: 29-SPECIES ROSTER & FILTERS
+// 2. LEFT PANEL: 74-SPECIES ROSTER & FILTERS
 // -----------------------------------------------------------------------------
 function getFilteredSpecies() {
   return SPECIES.filter((sp) => {
-    if (currentFilter === 'Carnivore' && sp.diet !== 'Carnivore') return false;
+    if (currentFilter === 'Carnivore' && sp.diet !== 'Carnivore' && sp.diet !== 'Piscivore') return false;
     if (currentFilter === 'Herbivore' && sp.diet !== 'Herbivore' && sp.diet !== 'Omnivore') return false;
     if (currentFilter === 'Ocean' && sp.domain !== 'Ocean' && sp.domain !== 'Semi-Aquatic') return false;
     if (currentFilter === 'Sky' && sp.domain !== 'Sky') return false;
 
     if (currentSearch.trim() !== '') {
       const q = currentSearch.toLowerCase();
-      const hay = `${sp.name} ${sp.scientificName} ${sp.meaning} ${sp.eraId} ${sp.clade}`.toLowerCase();
+      const loc = getSpLoc(sp);
+      const hay = `${sp.name} ${loc.name} ${sp.scientificName} ${sp.meaning} ${loc.meaning} ${sp.eraId} ${sp.clade} ${loc.periodLabel}`.toLowerCase();
       if (!hay.includes(q)) return false;
     }
     return true;
@@ -252,19 +304,23 @@ function getFilteredSpecies() {
 }
 
 function renderSpeciesRoster() {
+  const s = ui();
   speciesRosterList.replaceChildren();
   const list = getFilteredSpecies();
 
   if (list.length === 0) {
     const empty = document.createElement('p');
     empty.className = 'story-paragraph';
-    empty.textContent = 'No prehistoric species match your search filter.';
+    empty.textContent = s.noSpeciesMatch;
     speciesRosterList.appendChild(empty);
     return;
   }
 
   list.forEach((sp) => {
     const era = ERAS.find((e) => e.id === sp.eraId);
+    const eraLoc = getEraLoc(era);
+    const spLoc = getSpLoc(sp, era);
+
     const btn = document.createElement('button');
     btn.type = 'button';
     btn.className = 'species-card-item';
@@ -283,14 +339,14 @@ function renderSpeciesRoster() {
         ? '🌊 '
         : sp.domain === 'Sky'
         ? '🦅 '
-        : sp.diet === 'Carnivore'
+        : sp.diet === 'Carnivore' || sp.diet === 'Piscivore'
         ? '🥩 '
         : '🌿 ';
-    nameSpan.textContent = `${icon}${sp.name}`;
+    nameSpan.textContent = `${icon}${spLoc.name}`;
 
     const eraDot = document.createElement('span');
     eraDot.className = 'species-card-era-dot';
-    eraDot.textContent = `${sp.paleoMa} MYA`;
+    eraDot.textContent = `${sp.paleoMa} ${s.myaSuffix}`;
     if (era) {
       eraDot.style.color = era.themeColor;
     }
@@ -301,9 +357,9 @@ function renderSpeciesRoster() {
     const metaRow = document.createElement('div');
     metaRow.className = 'species-card-meta';
     const leftMeta = document.createElement('span');
-    leftMeta.textContent = era ? era.name : sp.periodLabel;
+    leftMeta.textContent = era ? eraLoc.name : spLoc.periodLabel;
     const rightMeta = document.createElement('span');
-    rightMeta.textContent = `${sp.metrics.lengthM}m • ${sp.diet}`;
+    rightMeta.textContent = `${sp.metrics.lengthM}m • ${spLoc.dietLabel}`;
     metaRow.appendChild(leftMeta);
     metaRow.appendChild(rightMeta);
 
@@ -334,18 +390,22 @@ function updateRosterActiveState(activeSpeciesId) {
 // 3. RIGHT INSPECTOR PANEL & 2D SCALE COMPARATOR
 // -----------------------------------------------------------------------------
 function updateInspectorPanel(sp, era) {
-  inspEraBadge.textContent = sp.periodLabel;
+  if (!sp) return;
+  const s = ui();
+  const spLoc = getSpLoc(sp, era);
+
+  inspEraBadge.textContent = spLoc.periodLabel;
   if (era) {
     inspEraBadge.style.borderColor = era.themeColor;
     inspEraBadge.style.color = era.themeColor;
   }
-  inspDietBadge.textContent = `${sp.diet === 'Carnivore' ? '🥩' : sp.diet === 'Piscivore' ? '🐟' : '🌿'} ${sp.diet}`;
-  inspStanceBadge.textContent = `${sp.stance} (${sp.domain})`;
+  inspDietBadge.textContent = `${sp.diet === 'Carnivore' ? '🥩' : sp.diet === 'Piscivore' ? '🐟' : '🌿'} ${spLoc.dietLabel}`;
+  inspStanceBadge.textContent = `${spLoc.stanceLabel} (${spLoc.domainLabel})`;
 
-  inspName.textContent = sp.name;
+  inspName.textContent = spLoc.name;
   inspScientific.textContent = sp.scientificName;
   inspPronunciation.textContent = `🔊 ${sp.pronunciation}`;
-  inspMeaning.textContent = `Meaning: ${sp.meaning} • Clade: ${sp.clade}`;
+  inspMeaning.textContent = `${s.meaningLabel}: ${spLoc.meaning} • ${s.cladeLabel}: ${sp.clade}`;
 
   const feetLen = Math.round(sp.metrics.lengthM * 3.28084);
   const feetH = Math.round(sp.metrics.heightM * 3.28084);
@@ -354,19 +414,22 @@ function updateInspectorPanel(sp, era) {
   metricWeight.textContent = sp.metrics.weightLabel;
   metricSpeedBite.textContent = `${sp.metrics.speedKmh} km/h • ${sp.metrics.biteForceN.toLocaleString()} N`;
 
-  btnTriggerWhatif.textContent = sp.whatIfLabel || '⚡ Unleash Apex Action';
+  btnTriggerWhatif.textContent = spLoc.whatIfLabel || s.btnWhatIfDefault;
   whatifToast.classList.add('hidden');
 
-  render2DScaleComparison(sp);
+  render2DScaleComparison(sp, spLoc);
 
-  inspStory.textContent = sp.story;
+  inspStory.textContent = spLoc.story;
 
   // Render 3 Clickable Anatomical Hotspots
   inspHotspotsList.replaceChildren();
-  (sp.hotspots || []).forEach((hs, idx) => {
+  (spLoc.hotspots || []).forEach((hs, idx) => {
     const card = document.createElement('button');
     card.type = 'button';
     card.className = 'hotspot-detail-card';
+    if (activeHotspotIndex === idx) {
+      card.classList.add('active');
+    }
     card.dataset.hsIndex = String(idx);
 
     const title = document.createElement('div');
@@ -375,7 +438,7 @@ function updateInspectorPanel(sp, era) {
 
     const bone = document.createElement('div');
     bone.className = 'hotspot-card-bone';
-    bone.textContent = `🦴 Anatomy: ${hs.organOrBone}`;
+    bone.textContent = `${s.anatomyPrefix} ${hs.organOrBone}`;
 
     const desc = document.createElement('div');
     desc.className = 'hotspot-card-desc';
@@ -395,27 +458,27 @@ function updateInspectorPanel(sp, era) {
 
   // Render Fun Facts
   inspFactsList.replaceChildren();
-  (sp.funFacts || []).forEach((fact) => {
+  (spLoc.funFacts || []).forEach((fact) => {
     const li = document.createElement('li');
     li.textContent = fact;
     inspFactsList.appendChild(li);
   });
 
   // Discovery Passport
-  const d = sp.discovery;
-  inspDiscoveryText.textContent = d
-    ? `Unearthed at ${d.location} (${d.country}) in the ${d.formation} (${d.year}) by ${d.paleontologist}.`
-    : 'Global fossil record.';
+  inspDiscoveryText.textContent = spLoc.discoveryText;
 }
 
-function render2DScaleComparison(sp) {
+function render2DScaleComparison(sp, spLocInput) {
+  if (!sp) return;
+  const s = ui();
+  const spLoc = spLocInput || getSpLoc(sp);
   scaleBarsContainer.replaceChildren();
   const maxRef = Math.max(14.0, sp.metrics.lengthM);
   const comparisons = [
-    { label: `🦖 ${sp.name}`, meters: sp.metrics.lengthM, color: '#f59e0b' },
-    { label: '🧒 10-Yr-Old Kid (Height)', meters: 1.4, color: '#38bdf8' },
-    { label: '🧑‍🔬 Adult Human (Height)', meters: 1.8, color: '#10b981' },
-    { label: '🚌 School Bus (Length)', meters: 11.0, color: '#eab308' },
+    { label: `🦖 ${spLoc.name}`, meters: sp.metrics.lengthM, color: '#f59e0b' },
+    { label: s.scaleKid, meters: 1.4, color: '#38bdf8' },
+    { label: s.scaleAdult, meters: 1.8, color: '#10b981' },
+    { label: s.scaleBus, meters: 11.0, color: '#eab308' },
   ];
 
   comparisons.forEach((item) => {
@@ -462,6 +525,7 @@ try {
 }
 
 function setHotspotDisplayMode(mode) {
+  const s = ui();
   const validMode = HOTSPOT_MODES.includes(mode) ? mode : 'full';
   hotspotDisplayMode = validMode;
   hotspotOverlay.dataset.hotspotMode = validMode;
@@ -472,14 +536,14 @@ function setHotspotDisplayMode(mode) {
   }
 
   const labelMap = {
-    full: '🏷️ Bubbles: Full',
-    compact: '🏷️ Bubbles: Min',
-    hidden: '🏷️ Bubbles: Off',
+    full: s.bubblesFull,
+    compact: s.bubblesMin,
+    hidden: s.bubblesOff,
   };
   const inspLabelMap = {
-    full: '🏷️ 3D Bubbles: Full',
-    compact: '🏷️ 3D Bubbles: Min',
-    hidden: '🏷️ 3D Bubbles: Off',
+    full: s.inspBubblesFull,
+    compact: s.inspBubblesMin,
+    hidden: s.inspBubblesOff,
   };
   if (btnHotspotMode) {
     btnHotspotMode.textContent = labelMap[validMode];
@@ -511,12 +575,17 @@ function showViewportToast(message) {
 }
 
 function setToastMinimized(minimized) {
+  const s = ui();
   whatifToast.classList.toggle('whatif-toast--minimized', minimized);
   if (btnToastMinimize) {
     btnToastMinimize.textContent = minimized ? '+' : '−';
-    const label = minimized ? 'Expand description bubble' : 'Minimize description bubble';
+    const label = minimized ? s.toastExpandTitle : s.toastMinimizeTitle;
     btnToastMinimize.title = label;
     btnToastMinimize.setAttribute('aria-label', label);
+  }
+  if (btnToastClose) {
+    btnToastClose.title = s.toastCloseTitle;
+    btnToastClose.setAttribute('aria-label', s.toastCloseTitle);
   }
 }
 
@@ -539,9 +608,12 @@ whatifToastText?.addEventListener('click', () => {
 });
 
 function rebuildFloatingHotspotPins(sp) {
+  if (!sp) return;
+  const s = ui();
+  const spLoc = getSpLoc(sp);
   hotspotOverlay.replaceChildren();
   hotspotPinElements = [];
-  (sp.hotspots || []).forEach((hs, idx) => {
+  (spLoc.hotspots || []).forEach((hs, idx) => {
     const pin = document.createElement('div');
     pin.className = 'hotspot-pin-btn';
 
@@ -568,8 +640,8 @@ function rebuildFloatingHotspotPins(sp) {
     minBtn.type = 'button';
     minBtn.className = 'hotspot-pin-ctrl hotspot-pin-min';
     minBtn.textContent = '−';
-    minBtn.title = 'Minimize yellow bubbles to compact numbered dots';
-    minBtn.setAttribute('aria-label', 'Minimize yellow hotspot bubbles');
+    minBtn.title = s.pinMinimizeTitle;
+    minBtn.setAttribute('aria-label', s.pinMinimizeTitle);
     minBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       setHotspotDisplayMode('compact');
@@ -579,8 +651,8 @@ function rebuildFloatingHotspotPins(sp) {
     hideBtn.type = 'button';
     hideBtn.className = 'hotspot-pin-ctrl hotspot-pin-hide';
     hideBtn.textContent = '✕';
-    hideBtn.title = 'Hide yellow bubbles from 3D view';
-    hideBtn.setAttribute('aria-label', 'Hide yellow hotspot bubbles');
+    hideBtn.title = s.pinHideTitle;
+    hideBtn.setAttribute('aria-label', s.pinHideTitle);
     hideBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       setHotspotDisplayMode('hidden');
@@ -623,7 +695,8 @@ function selectHotspot(idx) {
     }
   });
 
-  const hs = engine.activeSpecies?.hotspots?.[idx];
+  const spLoc = getSpLoc(engine.activeSpecies);
+  const hs = spLoc?.hotspots?.[idx];
   if (hs) {
     showViewportToast(`🔬 ${hs.title}: ${hs.detail}`);
   }
@@ -633,7 +706,11 @@ function selectHotspot(idx) {
 // 5. LIVE MINI PALEO-EARTH CONTINENTAL DRIFT TRACKER
 // -----------------------------------------------------------------------------
 function updateMiniPaleoEarth(sp, era) {
-  miniEarthEraLabel.textContent = `🌍 ${era ? era.name : sp.periodLabel} (${sp.paleoMa} MYA)`;
+  if (!sp) return;
+  const s = ui();
+  const eraLoc = getEraLoc(era || ERAS.find((e) => e.id === sp.eraId));
+  const spLoc = getSpLoc(sp, era);
+  miniEarthEraLabel.textContent = `🌍 ${era ? eraLoc.name : spLoc.periodLabel} (${sp.paleoMa} ${s.myaSuffix})`;
   const c = sp.climate || { o2Pct: 26, co2Ppm: 1400, tempC: 21 };
   miniEarthClimateBadge.textContent = `O₂ ${c.o2Pct}% • CO₂ ${c.co2Ppm}ppm • +${c.tempC}°C`;
   miniEarthPinCaption.textContent = `🦴 ${sp.discovery?.location || 'Global'}, ${sp.discovery?.country || ''}`;
@@ -643,16 +720,13 @@ function updateMiniPaleoEarth(sp, era) {
     width: 420,
     height: 210,
     mapPin: sp.discovery?.mapPin,
-    pinLabel: sp.name,
+    pinLabel: spLoc.name,
   });
 }
 
 // -----------------------------------------------------------------------------
 // 5b. PHONES & TABLETS: SPECIES LIST AND FIELD GUIDE AS BOTTOM SHEETS
 // -----------------------------------------------------------------------------
-// At <= 1024px (matches the styles.css breakpoint) the two side panels become bottom sheets
-// opened from a tab bar, so the dinosaur keeps most of the screen. Desktop never sets
-// <body data-mobile-sheet>, so its three-column layout is untouched.
 const SHEET_LAYOUT_QUERY = window.matchMedia('(max-width: 1024px)');
 const sheetToggles = {
   roster: document.getElementById('btn-mobile-sheet-roster'),
@@ -675,7 +749,6 @@ function setMobileSheet(name) {
     btn?.setAttribute('aria-expanded', String(key === open));
     btn?.classList.toggle('active', key === open);
   });
-  // Keyboard/screen-reader users land inside the sheet, and back on its tab when it closes.
   if (open) {
     sheetPanels[open]?.querySelector('.sheet-close-btn')?.focus({ preventScroll: true });
   } else if (previous && sheetPanels[previous]?.contains(document.activeElement)) {
@@ -695,11 +768,10 @@ Object.entries(sheetToggles).forEach(([key, btn]) => {
 document.querySelectorAll('[data-close-sheet]').forEach((btn) => {
   btn.addEventListener('click', closeMobileSheet);
 });
-// Rotating a tablet / widening a window into the desktop layout must not leave a sheet state behind.
 if (typeof SHEET_LAYOUT_QUERY.addEventListener === 'function') {
   SHEET_LAYOUT_QUERY.addEventListener('change', closeMobileSheet);
 } else if (typeof SHEET_LAYOUT_QUERY.addListener === 'function') {
-  SHEET_LAYOUT_QUERY.addListener(closeMobileSheet); // Safari < 14
+  SHEET_LAYOUT_QUERY.addListener(closeMobileSheet);
 }
 
 // -----------------------------------------------------------------------------
@@ -709,27 +781,40 @@ let isFullView = false;
 let isDockMinimized = false;
 
 function setDockMinimized(minimized) {
+  const s = ui();
   isDockMinimized = Boolean(minimized);
   document.body.classList.toggle('dock-minimized', isDockMinimized);
   if (btnQuickDock) {
     btnQuickDock.setAttribute('aria-pressed', String(isDockMinimized));
-    btnQuickDock.textContent = isDockMinimized ? '🎛️ Show Dock' : '🎛️ Hide Dock';
+    btnQuickDock.textContent = isDockMinimized ? s.vpShowDock : s.vpHideDock;
+  }
+}
+
+function renderTopFullViewButton() {
+  if (!btnToggleFullview) return;
+  const s = ui();
+  btnToggleFullview.setAttribute('aria-pressed', String(isFullView));
+  if (isFullView) {
+    btnToggleFullview.textContent = s.btnExitFullView;
+  } else {
+    const longSpan = document.createElement('span');
+    longSpan.className = 'lbl-long';
+    longSpan.textContent = s.btnFullViewTopLong;
+    btnToggleFullview.replaceChildren('⛶ ', longSpan, s.btnFullViewTopShort);
   }
 }
 
 function setFullView(active) {
+  const s = ui();
   isFullView = Boolean(active);
   document.body.classList.toggle('full-view', isFullView);
   if (!isFullView) {
     setDockMinimized(false);
   }
-  if (btnToggleFullview) {
-    btnToggleFullview.setAttribute('aria-pressed', String(isFullView));
-    btnToggleFullview.textContent = isFullView ? '↙ Exit Full View' : '⛶ Full View';
-  }
+  renderTopFullViewButton();
   if (btnDockFullview) {
     btnDockFullview.setAttribute('aria-pressed', String(isFullView));
-    btnDockFullview.textContent = isFullView ? '↙ Exit Full View' : '↔️ Full View';
+    btnDockFullview.textContent = isFullView ? s.btnExitFullView : s.vpFullView;
   }
   btnQuickDock?.classList.toggle('hidden', !isFullView);
   btnQuickExitFullview?.classList.toggle('hidden', !isFullView);
@@ -737,10 +822,11 @@ function setFullView(active) {
 }
 
 function updateFullscreenButtonUI() {
+  const s = ui();
   const fsActive = Boolean(document.fullscreenElement);
   if (btnDockFullscreen) {
     btnDockFullscreen.setAttribute('aria-pressed', String(fsActive));
-    btnDockFullscreen.textContent = fsActive ? '↙ Exit Full Screen' : '⛶ Full Screen';
+    btnDockFullscreen.textContent = fsActive ? s.vpExitFullScreen : s.vpFullScreen;
   }
 }
 
@@ -755,7 +841,6 @@ async function toggleBrowserFullscreen() {
       await document.exitFullscreen();
     }
   } catch {
-    // Fallback when browser blocks Fullscreen API: Full View still expands the 3D viewport
     setFullView(!isFullView);
   }
   updateFullscreenButtonUI();
@@ -800,12 +885,18 @@ document.querySelectorAll('.layer-btn').forEach((btn) => {
 });
 
 btnToggleScale.addEventListener('click', () => {
+  const s = ui();
   const next = !engine.showScaleComparator;
   engine.setViewMode('lab');
   engine.setScaleComparatorVisible(next);
   btnToggleScale.setAttribute('aria-pressed', String(next));
   if (next) {
-    showViewportToast(`📏 3D Scale Active: Blue = 10-Yr-Old Kid (1.4m), Green = Adult (1.8m), Yellow = School Bus (11m) vs. ${engine.activeSpecies.name} (${engine.activeSpecies.metrics.lengthM}m)!`);
+    const spLoc = getSpLoc(engine.activeSpecies);
+    showViewportToast(
+      s.toastScale
+        .replace('{name}', spLoc.name)
+        .replace('{len}', String(engine.activeSpecies.metrics.lengthM))
+    );
   } else {
     whatifToast.classList.add('hidden');
   }
@@ -819,25 +910,33 @@ btnResetCamera.addEventListener('click', () => {
 btnPlayRoar.addEventListener('click', () => {
   audio.unlock();
   audio.playRoar(engine.activeSpecies, { intensity: 1.0, kind: 'button' });
-  showViewportToast(`🔊 ${engine.activeSpecies.name}: ${engine.activeSpecies.vocalProfile?.description || 'Prehistoric vocal call'}`);
+  const spLoc = getSpLoc(engine.activeSpecies);
+  showViewportToast(`🔊 ${spLoc.name}: ${spLoc.vocalDescription || 'Prehistoric vocal call'}`);
 });
 
 btnPlayFootsteps.addEventListener('click', () => {
+  const s = ui();
   audio.unlock();
   audio.playFootsteps(engine.activeSpecies);
-  showViewportToast(`🐾 Seismic Footstep Simulation: ${engine.activeSpecies.metrics.weightLabel} at ${engine.activeSpecies.metrics.speedKmh} km/h!`);
+  showViewportToast(
+    s.toastFootsteps
+      .replace('{weight}', engine.activeSpecies.metrics.weightLabel)
+      .replace('{speed}', String(engine.activeSpecies.metrics.speedKmh))
+  );
 });
 
-const NARRATE_IDLE_LABEL = '🗣️ Read Aloud for Kids';
+let lastNarrationState = { speaking: false, phase: 'idle', narrationEngine: 'device' };
 function setNarrationButtonState(speaking, phase, narrationEngine) {
+  const s = ui();
+  lastNarrationState = { speaking, phase, narrationEngine };
   btnNarrateStory.classList.toggle('bio-btn--busy', speaking && phase === 'loading');
   btnNarrateStory.classList.toggle('bio-btn--speaking', speaking && phase === 'playing');
   if (!speaking) {
-    btnNarrateStory.textContent = NARRATE_IDLE_LABEL;
+    btnNarrateStory.textContent = s.btnNarrateIdle;
   } else if (phase === 'loading') {
-    btnNarrateStory.textContent = narrationEngine === 'chirp' ? '⏳ Warming up Chirp 3 HD voice…' : '⏳ Preparing voice…';
+    btnNarrateStory.textContent = narrationEngine === 'chirp' ? s.btnNarrateWarmingChirp : s.btnNarrateWarmingDevice;
   } else {
-    btnNarrateStory.textContent = narrationEngine === 'chirp' ? '⏹️ Stop Narration (Chirp 3 HD)' : '⏹️ Stop Narration (device voice)';
+    btnNarrateStory.textContent = narrationEngine === 'chirp' ? s.btnNarrateStopChirp : s.btnNarrateStopDevice;
   }
 }
 
@@ -847,8 +946,16 @@ btnNarrateStory.addEventListener('click', () => {
     audio.stopNarration(() => setNarrationButtonState(false, 'idle'));
     return;
   }
+  const s = ui();
   const sp = engine.activeSpecies;
-  const fullSpeech = `${sp.name}, scientific name ${sp.scientificName}, meaning ${sp.meaning}. It lived during the ${sp.periodLabel}. ${sp.story} Fun fact: ${sp.funFacts?.[0] || ''}`;
+  const spLoc = getSpLoc(sp);
+  const fullSpeech = s.narrationTemplate
+    .replace('{name}', spLoc.name)
+    .replace('{sci}', sp.scientificName)
+    .replace('{meaning}', spLoc.meaning)
+    .replace('{period}', spLoc.periodLabel)
+    .replace('{story}', spLoc.story)
+    .replace('{fact}', spLoc.funFacts?.[0] || '');
   audio.narrateText(fullSpeech, setNarrationButtonState);
 });
 
@@ -856,8 +963,9 @@ btnTriggerWhatif.addEventListener('click', () => {
   audio.unlock();
   const active = engine.toggleWhatIf();
   if (active) {
+    const spLoc = getSpLoc(engine.activeSpecies);
     audio.playRoar(engine.activeSpecies, { intensity: 1.3, kind: 'apex' });
-    showViewportToast(`⚡ ${engine.activeSpecies.whatIfOutcome}`);
+    showViewportToast(`⚡ ${spLoc.whatIfOutcome}`);
     if (engine.activeSpecies.id === 'chicxulub-avian-survivor') {
       openImpactModal();
       audio.playImpactBoom();
@@ -869,9 +977,10 @@ btnTriggerWhatif.addEventListener('click', () => {
 
 // Living soundscape toggle (auto calls, footsteps, era ambience)
 function renderAmbienceToggle() {
+  const s = ui();
   const on = audio.ambienceEnabled;
   btnToggleAmbience.setAttribute('aria-pressed', String(on));
-  btnToggleAmbience.textContent = on ? '🔈 Living Soundscape: On' : '🔇 Living Soundscape: Off';
+  btnToggleAmbience.textContent = on ? s.soundscapeOn : s.soundscapeOff;
 }
 btnToggleAmbience.addEventListener('click', () => {
   audio.unlock();
@@ -884,14 +993,21 @@ renderAmbienceToggle();
 
 // Labeled Light Mode vs. Dark Mode selector (controls both 3D backdrop and UI theme; light by default)
 function renderThemeModeSwitcher(mode) {
+  const s = ui();
   const isLight = mode !== 'dark';
   if (btnThemeLight) {
     btnThemeLight.classList.toggle('active', isLight);
     btnThemeLight.setAttribute('aria-pressed', String(isLight));
+    btnThemeLight.title = s.themeLightTitle;
+    const lbl = btnThemeLight.querySelector('.lbl-theme');
+    if (lbl) lbl.textContent = s.themeLight;
   }
   if (btnThemeDark) {
     btnThemeDark.classList.toggle('active', !isLight);
     btnThemeDark.setAttribute('aria-pressed', String(!isLight));
+    btnThemeDark.title = s.themeDarkTitle;
+    const lbl = btnThemeDark.querySelector('.lbl-theme');
+    if (lbl) lbl.textContent = s.themeDark;
   }
 }
 
@@ -912,10 +1028,15 @@ renderThemeModeSwitcher(engine.backdropTheme);
 
 // Narrator voice picker: Google Cloud Chirp 3 HD voices (via the local proxy) or the device voice
 function renderVoicePicker(status) {
+  if (status !== undefined) {
+    lastTtsStatus = status;
+  }
+  const s = ui();
+  const langMeta = SUPPORTED_LANGUAGES.find((l) => l.code === currentLang) || SUPPORTED_LANGUAGES[0];
   narratorVoiceSelect.replaceChildren();
-  const chirpAvailable = Boolean(status?.available);
+  const chirpAvailable = Boolean(lastTtsStatus?.available);
   if (chirpAvailable) {
-    const allowed = new Set(status.voices || []);
+    const allowed = new Set(lastTtsStatus.voices || []);
     CHIRP_VOICE_PRESETS.filter((v) => allowed.size === 0 || allowed.has(v.id)).forEach((preset) => {
       const opt = document.createElement('option');
       opt.value = preset.id;
@@ -925,7 +1046,10 @@ function renderVoicePicker(status) {
   }
   const deviceOpt = document.createElement('option');
   deviceOpt.value = 'device';
-  deviceOpt.textContent = chirpAvailable ? 'Device voice (offline fallback)' : 'Device voice (offline)';
+  deviceOpt.textContent = (chirpAvailable ? s.voiceOptionDeviceFallback : s.voiceOptionDeviceOnly).replace(
+    '{lang}',
+    langMeta.nativeName
+  );
   narratorVoiceSelect.appendChild(deviceOpt);
 
   const wanted = audio.narrationMode === 'device' || !chirpAvailable ? 'device' : audio.voiceName;
@@ -933,14 +1057,17 @@ function renderVoicePicker(status) {
   if (narratorVoiceSelect.value !== wanted) {
     narratorVoiceSelect.selectedIndex = 0;
   }
-  audio.setVoice(narratorVoiceSelect.value);
+  if (lastTtsStatus !== null) {
+    audio.setVoice(narratorVoiceSelect.value);
+  }
 
   narratorVoiceStatus.classList.toggle('voice-status--ok', chirpAvailable);
   narratorVoiceStatus.classList.toggle('voice-status--fallback', !chirpAvailable);
   narratorVoiceStatus.textContent = chirpAvailable
-    ? '✓ Google Chirp 3 HD ready'
-    : 'Chirp 3 HD unavailable — using device voice';
+    ? s.voiceReadyChirp
+    : s.voiceFallbackDevice.replace('{lang}', langMeta.nativeName);
 }
+
 narratorVoiceSelect.addEventListener('change', () => {
   audio.setVoice(narratorVoiceSelect.value);
   if (audio.isSpeaking) {
@@ -958,40 +1085,20 @@ const driftMaReadout = document.getElementById('drift-ma-readout');
 const largeDriftCanvas = document.getElementById('large-drift-canvas');
 const driftExplanationText = document.getElementById('drift-explanation-text');
 
-function getEraDescriptionForMa(ma) {
-  if (ma >= 250) {
-    return `${ma} MYA (Permian Period): All continents are fused into Supercontinent Pangaea surrounded by the global Panthalassic Ocean. Sail-backed Dimetrodon and saber-toothed Gorgonopsids rule the red-bed deserts.`;
-  }
-  if (ma >= 201) {
-    return `${ma} MYA (Triassic Period): Pangaea starts stretching along volcanic rift valleys. Early nimble bipedal dinosaurs (Eoraptor, Coelophysis, Herrerasaurus) and prosauropods (Plateosaurus) emerge!`;
-  }
-  if (ma >= 145) {
-    return `${ma} MYA (Jurassic Period): The Central Atlantic Ocean opens, splitting Pangaea into northern Laurasia and southern Gondwana! Warm humid conifer forests feed 50-ton Brachiosaurus, Diplodocus, and Stegosaurus.`;
-  }
-  if (ma >= 90) {
-    return `${ma} MYA (Early & Mid Cretaceous): South America and Africa rift apart as the South Atlantic opens, and the first flowering plants bloom! Spinosaurus hunts in North African river deltas while 75-ton Argentinosaurus walks Patagonia.`;
-  }
-  if (ma >= 66) {
-    return `${ma} MYA (Late Cretaceous): High sea levels flood central North America to form the Western Interior Seaway! T-Rex, Triceratops, and Ankylosaurus roam Laramidia while 17-meter Mosasaurus rules the inland sea.`;
-  }
-  if (ma >= 25) {
-    return `${ma} MYA (Cenozoic Era): After the 66 MYA Chicxulub asteroid impact, India collides northward into Eurasia to push up the Himalaya Mountains while birds and mammals diversify!`;
-  }
-  return `${ma} MYA (Modern Earth): Today's 7 continents! Look up in the sky—over 11,000 species of feathered avian theropod dinosaurs (birds) still thrive on every continent from the Amazon to Antarctica!`;
-}
-
 function updateLargeDriftLab(ma) {
+  const s = ui();
   const numMa = Number(ma);
   driftMaSlider.value = String(numMa);
-  driftMaReadout.textContent = `${numMa} Million Years Ago`;
-  driftExplanationText.textContent = getEraDescriptionForMa(numMa);
+  driftMaReadout.textContent = s.driftReadoutUnit.replace('{ma}', String(numMa));
+  driftExplanationText.textContent = getLocalizedDriftDescription(numMa, currentLang);
 
+  const spLoc = getSpLoc(engine.activeSpecies);
   renderContinentalDriftTexture(numMa, {
     canvas: largeDriftCanvas,
     width: 960,
     height: 460,
     mapPin: engine.activeSpecies?.discovery?.mapPin,
-    pinLabel: `${engine.activeSpecies?.name} Fossil Site`,
+    pinLabel: `${spLoc.name} (${s.fossilSiteSuffix})`,
   });
 }
 
@@ -1029,6 +1136,7 @@ function renderChicxulubSimulation(val) {
   const ctx = impactCanvas.getContext('2d');
   const w = impactCanvas.width;
   const h = impactCanvas.height;
+  const impLoc = IMPACT_STAGE_LOCALIZATIONS[currentLang] || IMPACT_STAGE_LOCALIZATIONS.en;
 
   // Base Paleo-Earth at 66 MYA
   renderContinentalDriftTexture(v > 80 ? 0 : 66, {
@@ -1043,11 +1151,9 @@ function renderChicxulubSimulation(val) {
   const cy = h * 0.46;
 
   if (v < 25) {
-    impactReadout.textContent = 'Stage 1: T-Minus 10 Seconds — 10-km Bolide Entering Atmosphere at 72,000 km/h';
-    impactExplanation.textContent =
-      'A carbonaceous chondrite asteroid wider than Mount Everest streaks out of space at 20 kilometers per second, glowing 10,000°C hotter than the surface of the Sun as it targets the shallow Yucatán carbonate sea.';
+    impactReadout.textContent = impLoc.stage1Readout;
+    impactExplanation.textContent = impLoc.stage1Exp;
 
-    // Fiery asteroid streak
     ctx.save();
     const t = v / 25;
     const ax = w * 0.05 + (cx - w * 0.05) * t;
@@ -1068,9 +1174,8 @@ function renderChicxulubSimulation(val) {
     ctx.fill();
     ctx.restore();
   } else if (v < 55) {
-    impactReadout.textContent = 'Stage 2: Zero Hour — 180-km Chicxulub Crater, 100-m Mega-Tsunami & Seismic Shockwave';
-    impactExplanation.textContent =
-      'Impact releases 100 million megatons of energy (10 billion Hiroshima bombs)! A 180-km crater blasts molten rock into space, triggering Magnitude 11 earthquakes and a 100-meter-tall mega-tsunami across the Gulf of Mexico.';
+    impactReadout.textContent = impLoc.stage2Readout;
+    impactExplanation.textContent = impLoc.stage2Exp;
 
     const progress = (v - 25) / 30;
     const ringRadius = 25 + progress * 240;
@@ -1093,9 +1198,8 @@ function renderChicxulubSimulation(val) {
     ctx.stroke();
     ctx.restore();
   } else if (v < 82) {
-    impactReadout.textContent = 'Stage 3: Impact Winter & K-Pg Boundary Iridium Ash Cloud (75% of Species Perish)';
-    impactExplanation.textContent =
-      'Sulfur aerosols and soot wrap the entire globe, blocking sunlight for years. Photosynthesis stops, collapsing the food chain for giant herbivores (Triceratops, Edmontosaurus) and giant carnivores (T-Rex, Mosasaurus).';
+    impactReadout.textContent = impLoc.stage3Readout;
+    impactExplanation.textContent = impLoc.stage3Exp;
 
     ctx.save();
     ctx.fillStyle = 'rgba(30, 27, 75, 0.68)';
@@ -1103,18 +1207,17 @@ function renderChicxulubSimulation(val) {
     ctx.font = 'bold 18px system-ui, sans-serif';
     ctx.fillStyle = '#fde047';
     ctx.textAlign = 'center';
-    ctx.fillText('☁️ Global Iridium Dust & Sulfur Impact Winter — Sunlight Blocked', w / 2, h / 2);
+    ctx.fillText(impLoc.stage3Canvas, w / 2, h / 2);
     ctx.restore();
   } else {
-    impactReadout.textContent = 'Stage 4: 66 MYA → Today — Small Toothless Beaked Avian Dinosaurs Survive as Birds!';
-    impactExplanation.textContent =
-      'Why didn’t dinosaurs go 100% extinct? Small, warm-blooded, feathered avian theropods survived because their toothless keratin beaks could crack nutrient-rich buried seeds and nuts while forests recovered—giving rise to today’s 11,000+ species of living birds!';
+    impactReadout.textContent = impLoc.stage4Readout;
+    impactExplanation.textContent = impLoc.stage4Exp;
 
     ctx.save();
     ctx.font = 'bold 18px system-ui, sans-serif';
     ctx.fillStyle = '#6ee7b7';
     ctx.textAlign = 'center';
-    ctx.fillText('🦅 11,000+ Species of Living Avian Dinosaurs (Birds) Thrive Across All 7 Continents!', w / 2, 36);
+    ctx.fillText(impLoc.stage4Canvas, w / 2, 36);
     ctx.restore();
   }
 }
@@ -1146,29 +1249,32 @@ const quizModal = document.getElementById('quiz-modal');
 const quizModalBody = document.getElementById('quiz-modal-body');
 
 function renderQuizModal() {
+  const s = ui();
+  const localizedQuiz = QUIZ_LOCALIZATIONS[currentLang] || QUIZ_QUESTIONS;
   quizModalBody.replaceChildren();
-  QUIZ_QUESTIONS.forEach((q, qIdx) => {
+  QUIZ_QUESTIONS.forEach((baseQ, qIdx) => {
+    const qLoc = localizedQuiz[qIdx] || baseQ;
     const box = document.createElement('div');
     box.className = 'quiz-question-box';
 
     const title = document.createElement('div');
     title.className = 'quiz-q-title';
-    title.textContent = `${qIdx + 1}. ${q.question}`;
+    title.textContent = `${qIdx + 1}. ${qLoc.question}`;
     box.appendChild(title);
 
     const feedback = document.createElement('div');
     feedback.className = 'quiz-feedback hidden';
 
-    q.options.forEach((optText, oIdx) => {
+    (qLoc.options || baseQ.options).forEach((optText, oIdx) => {
       const optBtn = document.createElement('button');
       optBtn.type = 'button';
       optBtn.className = 'quiz-opt-btn';
       optBtn.textContent = optText;
 
       optBtn.addEventListener('click', () => {
-        const isCorrect = oIdx === q.correctIndex;
+        const isCorrect = oIdx === baseQ.correctIndex;
         optBtn.classList.add(isCorrect ? 'correct' : 'wrong');
-        feedback.textContent = `${isCorrect ? '✅ Correct! ' : '💡 Not quite! '}${q.explanation}`;
+        feedback.textContent = `${isCorrect ? s.quizCorrect : s.quizWrong}${qLoc.explanation || baseQ.explanation}`;
         feedback.classList.remove('hidden');
       });
 
@@ -1190,7 +1296,7 @@ document.getElementById('btn-close-quiz-modal').addEventListener('click', () => 
 });
 
 // -----------------------------------------------------------------------------
-// 10. MODAL 4: FULL 73-SPECIES PREHISTORIC ENCYCLOPEDIA ATLAS
+// 10. MODAL 4: FULL 74-SPECIES PREHISTORIC ENCYCLOPEDIA ATLAS
 // -----------------------------------------------------------------------------
 const atlasModal = document.getElementById('atlas-modal');
 const atlasGridBody = document.getElementById('atlas-grid-body');
@@ -1201,13 +1307,14 @@ const atlasSortSelect = document.getElementById('atlas-sort-select');
 const rosterCountLabel = document.getElementById('roster-count-label');
 
 function updateDynamicCountLabels() {
+  const s = ui();
   const total = SPECIES.length;
   if (rosterCountLabel) {
-    rosterCountLabel.textContent = `🦕 ${total} Prehistoric Species`;
+    rosterCountLabel.textContent = s.rosterCount.replace('{count}', String(total));
   }
   const allPill = dietFilterBar.querySelector('[data-filter="all"]');
   if (allPill) {
-    allPill.textContent = `All (${total})`;
+    allPill.textContent = s.filterAll.replace('{count}', String(total));
   }
   const atlasCount = document.getElementById('atlas-count');
   if (atlasCount) {
@@ -1217,6 +1324,7 @@ function updateDynamicCountLabels() {
 
 function renderAtlasModal() {
   if (!atlasGridBody) return;
+  const s = ui();
   atlasGridBody.replaceChildren();
 
   const q = (atlasSearchInput?.value || '').trim().toLowerCase();
@@ -1231,7 +1339,8 @@ function renderAtlasModal() {
     if (dietFilter === 'Ocean' && sp.domain !== 'Ocean' && sp.domain !== 'Semi-Aquatic') return false;
     if (dietFilter === 'Sky' && sp.domain !== 'Sky') return false;
     if (q !== '') {
-      const hay = `${sp.name} ${sp.scientificName} ${sp.meaning} ${sp.clade} ${sp.periodLabel} ${sp.discovery?.location || ''} ${sp.discovery?.country || ''} ${sp.discovery?.formation || ''}`.toLowerCase();
+      const spLoc = getSpLoc(sp);
+      const hay = `${sp.name} ${spLoc.name} ${sp.scientificName} ${sp.meaning} ${spLoc.meaning} ${sp.clade} ${sp.periodLabel} ${spLoc.periodLabel} ${sp.discovery?.location || ''} ${sp.discovery?.country || ''} ${sp.discovery?.formation || ''}`.toLowerCase();
       if (!hay.includes(q)) return false;
     }
     return true;
@@ -1240,11 +1349,14 @@ function renderAtlasModal() {
   if (sortMode === 'size-desc') {
     filtered.sort((a, b) => (b.metrics?.lengthM || 0) - (a.metrics?.lengthM || 0));
   } else if (sortMode === 'name') {
-    filtered.sort((a, b) => a.name.localeCompare(b.name));
+    filtered.sort((a, b) => getSpLoc(a).name.localeCompare(getSpLoc(b).name, currentLang));
   }
 
   filtered.forEach((sp) => {
     const era = ERAS.find((e) => e.id === sp.eraId);
+    const eraLoc = getEraLoc(era);
+    const spLoc = getSpLoc(sp, era);
+
     const card = document.createElement('button');
     card.type = 'button';
     card.className = 'atlas-card';
@@ -1265,11 +1377,11 @@ function renderAtlasModal() {
         : sp.diet === 'Carnivore' || sp.diet === 'Piscivore'
         ? '🥩 '
         : '🌿 ';
-    title.textContent = `${icon}${sp.name}`;
+    title.textContent = `${icon}${spLoc.name}`;
 
     const maBadge = document.createElement('span');
     maBadge.className = 'atlas-card-ma';
-    maBadge.textContent = `${sp.paleoMa} MYA`;
+    maBadge.textContent = `${sp.paleoMa} ${s.myaSuffix}`;
     if (era) {
       maBadge.style.color = era.themeColor;
     }
@@ -1279,13 +1391,13 @@ function renderAtlasModal() {
 
     const sci = document.createElement('div');
     sci.className = 'atlas-card-sci';
-    sci.textContent = `${sp.scientificName} — ${sp.meaning}`;
+    sci.textContent = `${sp.scientificName} — ${spLoc.meaning}`;
 
     const tags = document.createElement('div');
     tags.className = 'atlas-card-tags';
 
     [
-      era ? era.name : sp.periodLabel,
+      era ? eraLoc.name : spLoc.periodLabel,
       `${sp.metrics.lengthM}m • ${sp.metrics.weightLabel}`,
       sp.clade.split('(')[0].trim(),
     ].forEach((tText) => {
@@ -1297,7 +1409,7 @@ function renderAtlasModal() {
 
     const desc = document.createElement('div');
     desc.className = 'atlas-card-desc';
-    desc.textContent = sp.story;
+    desc.textContent = spLoc.story;
 
     card.appendChild(head);
     card.appendChild(sci);
@@ -1330,6 +1442,304 @@ atlasEraSelect?.addEventListener('change', renderAtlasModal);
 atlasDietSelect?.addEventListener('change', renderAtlasModal);
 atlasSortSelect?.addEventListener('change', renderAtlasModal);
 
+// -----------------------------------------------------------------------------
+// 11. 9-LANGUAGE INTERNATIONALIZATION (i18n) LIVE SWITCHER
+// -----------------------------------------------------------------------------
+function makeLongSpan(text) {
+  const span = document.createElement('span');
+  span.className = 'lbl-long';
+  span.textContent = text;
+  return span;
+}
+
+function applyStaticUiTranslations() {
+  const s = ui();
+  const total = SPECIES.length;
+  document.documentElement.lang = currentLang;
+  document.title = s.pageTitle;
+
+  const brandSub = document.querySelector('.brand-subtitle');
+  if (brandSub) brandSub.textContent = s.brandSubtitle;
+
+  // Top action buttons
+  const btnAtlas = document.getElementById('btn-open-atlas-modal');
+  if (btnAtlas) {
+    const countSpan = document.createElement('span');
+    countSpan.id = 'atlas-count';
+    countSpan.textContent = String(total);
+    btnAtlas.replaceChildren('📖 ', makeLongSpan(s.btnAtlasLong), `${s.btnAtlasShort} (`, countSpan, ')');
+  }
+
+  const btnDrift = document.getElementById('btn-open-drift-modal');
+  if (btnDrift) {
+    btnDrift.replaceChildren('🌍 ', makeLongSpan(s.btnDriftLong), s.btnDriftShort);
+  }
+
+  const btnImpact = document.getElementById('btn-open-impact-modal');
+  if (btnImpact) {
+    btnImpact.replaceChildren('☄️ ', makeLongSpan(s.btnImpactLong), s.btnImpactShort);
+  }
+
+  const btnQuiz = document.getElementById('btn-open-quiz-modal');
+  if (btnQuiz) {
+    btnQuiz.textContent = s.btnQuiz;
+  }
+
+  renderTopFullViewButton();
+  renderThemeModeSwitcher(engine.backdropTheme);
+
+  const langLabel = document.querySelector('.lang-switcher-pill');
+  if (langLabel) langLabel.title = s.langPickerTitle;
+  if (langSelect) {
+    langSelect.setAttribute('aria-label', s.langPickerTitle);
+    langSelect.value = currentLang;
+  }
+
+  // Left Roster Panel
+  const rosterSheetTitle = document.querySelector('#roster-panel .sheet-title');
+  if (rosterSheetTitle) rosterSheetTitle.textContent = s.sheetPickCreature;
+
+  updateDynamicCountLabels();
+
+  const btnSidebarAtlas = document.getElementById('btn-sidebar-atlas');
+  if (btnSidebarAtlas) btnSidebarAtlas.textContent = s.openFullAtlas;
+
+  if (searchInput) {
+    searchInput.placeholder = s.searchPlaceholder;
+    searchInput.setAttribute('aria-label', s.searchPlaceholder);
+  }
+
+  const pillCarnivore = dietFilterBar?.querySelector('[data-filter="Carnivore"]');
+  if (pillCarnivore) pillCarnivore.textContent = s.filterCarnivore;
+  const pillHerbivore = dietFilterBar?.querySelector('[data-filter="Herbivore"]');
+  if (pillHerbivore) pillHerbivore.textContent = s.filterHerbivore;
+  const pillOcean = dietFilterBar?.querySelector('[data-filter="Ocean"]');
+  if (pillOcean) pillOcean.textContent = s.filterOcean;
+  const pillSky = dietFilterBar?.querySelector('[data-filter="Sky"]');
+  if (pillSky) pillSky.textContent = s.filterSky;
+
+  // Center Viewport Mode Switcher & Quick Bar
+  if (modeBtnLab) {
+    modeBtnLab.replaceChildren('🔬 ', makeLongSpan(s.modeLabLong), s.modeLabShort);
+  }
+  if (modeBtnPortal) {
+    modeBtnPortal.replaceChildren(
+      '⏳ ',
+      makeLongSpan(s.modePortalPre),
+      s.modePortalMid,
+      makeLongSpan(s.modePortalHabitat),
+      s.modePortalShort,
+      makeLongSpan(s.modePortalEras)
+    );
+  }
+
+  if (btnDockFullview) {
+    btnDockFullview.textContent = isFullView ? s.btnExitFullView : s.vpFullView;
+  }
+  updateFullscreenButtonUI();
+  setDockMinimized(isDockMinimized);
+  setToastMinimized(whatifToast.classList.contains('whatif-toast--minimized'));
+
+  // Bottom 3D Dock
+  const layerGroupLabel = document.querySelector('.anatomy-layer-group .dock-group-label');
+  if (layerGroupLabel) layerGroupLabel.textContent = s.dock3DLayer;
+
+  const btnLayerSkin = document.querySelector('.layer-btn[data-layer="skin"]');
+  if (btnLayerSkin) btnLayerSkin.replaceChildren(s.layerSkinShort, makeLongSpan(s.layerSkinLong));
+
+  const btnLayerMuscle = document.querySelector('.layer-btn[data-layer="muscle"]');
+  if (btnLayerMuscle) btnLayerMuscle.replaceChildren(s.layerMuscleShort, makeLongSpan(s.layerMuscleLong));
+
+  const btnLayerSkeleton = document.querySelector('.layer-btn[data-layer="skeleton"]');
+  if (btnLayerSkeleton) btnLayerSkeleton.replaceChildren('🦴 ', makeLongSpan(s.layerSkeletonLong), s.layerSkeletonShort);
+
+  setHotspotDisplayMode(hotspotDisplayMode);
+
+  if (btnToggleScale) btnToggleScale.textContent = s.btnCompareSize;
+  if (btnResetCamera) btnResetCamera.textContent = s.btnResetCamera;
+  if (btnPlayRoar) btnPlayRoar.replaceChildren(s.btnRoarShort, makeLongSpan(s.btnRoarLong));
+  if (btnPlayFootsteps) btnPlayFootsteps.replaceChildren('🐾 ', makeLongSpan(s.btnFootstepsLong), s.btnFootstepsShort);
+
+  setNarrationButtonState(
+    lastNarrationState.speaking,
+    lastNarrationState.phase,
+    lastNarrationState.narrationEngine
+  );
+  renderAmbienceToggle();
+
+  const voicePickerLabel = document.querySelector('.voice-picker .dock-group-label');
+  if (voicePickerLabel) voicePickerLabel.textContent = s.narratorLabel;
+  renderVoicePicker();
+
+  // Mobile Tabbar
+  if (sheetToggles.roster) sheetToggles.roster.textContent = s.mobileTabSpecies;
+  if (sheetToggles.guide) sheetToggles.guide.textContent = s.mobileTabGuide;
+
+  // Right Inspector Static Headings & Metric Labels
+  const guideSheetTitle = document.querySelector('#inspector-panel .sheet-title');
+  if (guideSheetTitle) guideSheetTitle.textContent = s.sheetFieldGuide;
+
+  const metricLabels = document.querySelectorAll('.metrics-grid .metric-label');
+  if (metricLabels[0]) metricLabels[0].textContent = s.metricLength;
+  if (metricLabels[1]) metricLabels[1].textContent = s.metricHeight;
+  if (metricLabels[2]) metricLabels[2].textContent = s.metricWeight;
+  if (metricLabels[3]) metricLabels[3].textContent = s.metricSpeedBite;
+
+  const scaleChartTitle = document.querySelector('.scale-chart-title');
+  if (scaleChartTitle) scaleChartTitle.textContent = s.scaleChartTitle;
+
+  const storyHeading = document.querySelector('.story-card .section-heading');
+  if (storyHeading) storyHeading.textContent = s.headingStory;
+
+  const hotspotsHeading = document.querySelector('.hotspots-card .section-heading');
+  if (hotspotsHeading) hotspotsHeading.textContent = s.headingHotspots;
+
+  const factsHeading = document.querySelector('.facts-card .section-heading');
+  if (factsHeading) factsHeading.textContent = s.headingFacts;
+
+  const discoveryHeading = document.querySelector('.discovery-card .section-heading');
+  if (discoveryHeading) discoveryHeading.textContent = s.headingDiscovery;
+
+  // Modal 1: Drift Lab
+  const driftTitle = document.getElementById('drift-modal-title');
+  if (driftTitle) driftTitle.textContent = s.driftModalTitle;
+  const driftSub = document.querySelector('#drift-modal .modal-subtitle');
+  if (driftSub) driftSub.textContent = s.driftModalSubtitle;
+  const driftSliderLabel = document.querySelector('label[for="drift-ma-slider"]');
+  if (driftSliderLabel && driftMaReadout) {
+    driftSliderLabel.replaceChildren(s.driftSliderPrefix, driftMaReadout);
+  }
+  const presetBtns = document.querySelectorAll('.preset-ma-btn');
+  const presetMap = {
+    '280': s.driftPreset280,
+    '220': s.driftPreset220,
+    '152': s.driftPreset152,
+    '95': s.driftPreset95,
+    '67': s.driftPreset67,
+    '0': s.driftPreset0,
+  };
+  presetBtns.forEach((b) => {
+    if (presetMap[b.dataset.ma]) b.textContent = presetMap[b.dataset.ma];
+  });
+
+  // Modal 2: Chicxulub Impact Lab
+  const impactTitle = document.getElementById('impact-modal-title');
+  if (impactTitle) impactTitle.textContent = s.impactModalTitle;
+  const impactSub = document.querySelector('#impact-modal .modal-subtitle');
+  if (impactSub) impactSub.textContent = s.impactModalSubtitle;
+  const impactSliderLabel = document.querySelector('label[for="impact-stage-slider"]');
+  if (impactSliderLabel && impactReadout) {
+    impactSliderLabel.replaceChildren(s.impactSliderPrefix, impactReadout);
+  }
+  const impPresets = document.querySelectorAll('.impact-preset-btn');
+  const impPresetMap = {
+    '8': s.impactPreset1,
+    '35': s.impactPreset2,
+    '65': s.impactPreset3,
+    '95': s.impactPreset4,
+  };
+  impPresets.forEach((b) => {
+    if (impPresetMap[b.dataset.val]) b.textContent = impPresetMap[b.dataset.val];
+  });
+
+  // Modal 3: Quiz
+  const quizTitle = document.getElementById('quiz-modal-title');
+  if (quizTitle) quizTitle.textContent = s.quizModalTitle;
+  const quizSub = document.querySelector('#quiz-modal .modal-subtitle');
+  if (quizSub) quizSub.textContent = s.quizModalSubtitle;
+
+  // Modal 4: Encyclopedia Atlas
+  const atlasTitle = document.getElementById('atlas-modal-title');
+  if (atlasTitle) atlasTitle.textContent = s.atlasModalTitle.replace('{count}', String(total));
+  const atlasSub = document.querySelector('#atlas-modal .modal-subtitle');
+  if (atlasSub) atlasSub.textContent = s.atlasModalSubtitle;
+  if (atlasSearchInput) {
+    atlasSearchInput.placeholder = s.atlasSearchPlaceholder;
+    atlasSearchInput.setAttribute('aria-label', s.atlasSearchPlaceholder);
+  }
+  if (atlasEraSelect) {
+    const opts = atlasEraSelect.querySelectorAll('option');
+    opts.forEach((opt) => {
+      if (opt.value === 'all') {
+        opt.textContent = s.atlasEraAll.replace('{count}', String(total));
+      } else {
+        const eraObj = ERAS.find((e) => e.id === opt.value);
+        if (eraObj) {
+          const eLoc = getEraLoc(eraObj);
+          opt.textContent = `${eraObj.number}. ${eLoc.name} (${eLoc.timeRange})`;
+        }
+      }
+    });
+  }
+  if (atlasDietSelect) {
+    const dietMap = {
+      all: s.atlasDietAll,
+      Carnivore: s.atlasDietCarnivore,
+      Herbivore: s.atlasDietHerbivore,
+      Ocean: s.atlasDietOcean,
+      Sky: s.atlasDietSky,
+    };
+    atlasDietSelect.querySelectorAll('option').forEach((opt) => {
+      if (dietMap[opt.value]) opt.textContent = dietMap[opt.value];
+    });
+  }
+  if (atlasSortSelect) {
+    const sortMap = {
+      timeline: s.atlasSortTimeline,
+      'size-desc': s.atlasSortSize,
+      name: s.atlasSortName,
+    };
+    atlasSortSelect.querySelectorAll('option').forEach((opt) => {
+      if (sortMap[opt.value]) opt.textContent = sortMap[opt.value];
+    });
+  }
+}
+
+export function applyLanguage(langCode) {
+  const resolved = resolveSupportedLang(langCode);
+  currentLang = resolved;
+  audio.setLanguage(resolved);
+  try {
+    localStorage.setItem(LANG_STORAGE_KEY, resolved);
+  } catch {
+    // Ignore storage restrictions
+  }
+  if (audio.isSpeaking) {
+    audio.stopNarration(() => setNarrationButtonState(false, 'idle'));
+  }
+
+  applyStaticUiTranslations();
+  updatePassportCounter();
+  renderEraTabs();
+  const activeEra = ERAS[engine.activeEraIndex] || ERAS.find((e) => e.id === engine.activeSpecies?.eraId);
+  if (activeEra) {
+    updateEraBanner(activeEra);
+  }
+  renderSpeciesRoster();
+  if (engine.activeSpecies) {
+    const era = ERAS.find((e) => e.id === engine.activeSpecies.eraId);
+    updateInspectorPanel(engine.activeSpecies, era);
+    updateMiniPaleoEarth(engine.activeSpecies, era);
+    rebuildFloatingHotspotPins(engine.activeSpecies);
+  }
+  if (!driftModal.classList.contains('hidden')) {
+    updateLargeDriftLab(driftMaSlider.value);
+  }
+  if (!impactModal.classList.contains('hidden')) {
+    renderChicxulubSimulation(impactSlider.value);
+  }
+  if (!quizModal.classList.contains('hidden')) {
+    renderQuizModal();
+  }
+  if (atlasModal && !atlasModal.classList.contains('hidden')) {
+    renderAtlasModal();
+  }
+}
+
+langSelect?.addEventListener('change', (e) => {
+  applyLanguage(e.target.value);
+});
+
 // Close modals, dismiss toast, or exit Full View on Escape; press F to toggle Full View
 window.addEventListener('keydown', (e) => {
   const tag = (e.target?.tagName || '').toLowerCase();
@@ -1352,14 +1762,14 @@ window.addEventListener('keydown', (e) => {
 });
 
 // Boot Application
-updateDynamicCountLabels();
+applyStaticUiTranslations();
 renderEraTabs();
 renderSpeciesRoster();
 engine.init();
 
 // Read-only QA/debug handle (lets automated screenshot harnesses frame species & camera)
 Object.defineProperty(window, 'dinoVerseDebug', {
-  value: Object.freeze({ engine }),
+  value: Object.freeze({ engine, applyLanguage }),
   writable: false,
   configurable: false,
 });

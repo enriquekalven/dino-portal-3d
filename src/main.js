@@ -1547,9 +1547,6 @@ function applyStaticUiTranslations() {
   const btnLayerSkin = document.querySelector('.layer-btn[data-layer="skin"]');
   if (btnLayerSkin) btnLayerSkin.replaceChildren(s.layerSkinShort, makeLongSpan(s.layerSkinLong));
 
-  const btnLayerMuscle = document.querySelector('.layer-btn[data-layer="muscle"]');
-  if (btnLayerMuscle) btnLayerMuscle.replaceChildren(s.layerMuscleShort, makeLongSpan(s.layerMuscleLong));
-
   const btnLayerSkeleton = document.querySelector('.layer-btn[data-layer="skeleton"]');
   if (btnLayerSkeleton) btnLayerSkeleton.replaceChildren('🦴 ', makeLongSpan(s.layerSkeletonLong), s.layerSkeletonShort);
 

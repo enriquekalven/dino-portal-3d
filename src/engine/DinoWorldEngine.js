@@ -19,7 +19,7 @@ import { PBR, buildStudioEnvironmentScene } from './HyperRealKit.js';
  *
  * Modes:
  * - 'lab': 360° Paleontology Turntable & X-Ray Anatomy Lab for any of the 29 species,
- *          with Skin / Muscle+Organs / Fossil Skeleton toggle, 3D Human/Bus Scale Comparator,
+ *          with Skin / Fossil Skeleton toggle, 3D Human/Bus Scale Comparator,
  *          and 3D Projected Anatomical Hotspots.
  * - 'portal': Helical 3D Time-Portal across all 6 Geological Era Habitat Dioramas
  *             (Permian → Triassic → Jurassic → Early Cretaceous → Late Cretaceous → K-Pg).
@@ -114,7 +114,7 @@ export class DinoWorldEngine {
 
     // State
     this.viewMode = 'lab'; // 'lab' | 'portal'
-    this.anatomyLayer = 'skin'; // 'skin' | 'muscle' | 'skeleton' | 'xray'
+    this.anatomyLayer = 'skin'; // 'skin' | 'skeleton'
     this.showScaleComparator = false;
     this.whatIfActive = false;
     this.autoRotateTurntable = true;
@@ -586,16 +586,18 @@ export class DinoWorldEngine {
   }
 
   setAnatomyLayer(layer) {
-    this.anatomyLayer = layer;
+    // Only two layers are offered: outer skin and fossil skeleton.
+    const next = layer === 'skeleton' ? 'skeleton' : 'skin';
+    this.anatomyLayer = next;
     if (this.activeLabRig) {
-      this.activeLabRig.setAnatomyLayer(layer);
+      this.activeLabRig.setAnatomyLayer(next);
     }
     this.eraDioramas.forEach((dio) => {
-      dio.creatureInstances.forEach(({ rig }) => rig.setAnatomyLayer(layer));
+      dio.creatureInstances.forEach(({ rig }) => rig.setAnatomyLayer(next));
     });
     if (typeof document !== 'undefined') {
       document.querySelectorAll('.layer-btn').forEach((btn) => {
-        btn.classList.toggle('active', btn.dataset.layer === layer);
+        btn.classList.toggle('active', btn.dataset.layer === next);
       });
     }
   }

@@ -33,6 +33,9 @@ An interactive, offline-ready 3D educational portal for kids, students, and pale
 8. **Customizable Viewport, Light/Dark Mode & Hotspot Bubble Controls**
    - Defaults to a bright museum **Light Mode** with a one-click **☀️ Light / 🌙 Dark** theme switcher, **Full View (`F`)** & **Browser Full Screen** modes, and 3-state **3D Hotspot Description Bubbles (`Full` / `Min` / `Off`)**.
 
+9. **Opt-In Analytics & Cookie Consent (`src/consent.js` + `src/analytics.js`)**
+   - Google Analytics 4 loads **only after a visitor clicks "Accept"** on the localized cookie banner, only on the production domains, with Google Signals and ad personalization disabled. The **🍪** button in the top bar reopens the banner to change or withdraw consent (declining removes GA cookies).
+
 ## Running Locally
 
 ```bash

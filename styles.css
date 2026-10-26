@@ -2286,6 +2286,96 @@ html[data-backdrop="dark"] .atlas-card-ma {
 }
 
 /* ============================================================================
+   COOKIE CONSENT BANNER (Google Analytics loads only after "Accept")
+   Sits below modals (z-index 50) and above panels; Decline and Accept share
+   one style so refusing is as easy as accepting.
+   ============================================================================ */
+.cookie-banner {
+  position: fixed;
+  z-index: 45;
+  left: 16px;
+  bottom: 16px;
+  width: min(420px, calc(100vw - 32px));
+  max-height: 70vh;
+  overflow-y: auto;
+  padding: 14px 16px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+  background: var(--surface-card);
+  color: var(--text-primary);
+  box-shadow: 0 12px 32px rgba(15, 23, 42, 0.28);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cookie-banner[hidden] {
+  display: none;
+}
+
+.cookie-banner:focus-visible {
+  outline: 2px solid var(--amber-bright);
+  outline-offset: 2px;
+}
+
+.cookie-banner-title {
+  margin: 0;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.cookie-banner-text {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.cookie-banner-link {
+  align-self: flex-start;
+  font-size: 0.76rem;
+  font-weight: 700;
+  color: inherit;
+}
+
+.cookie-banner-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.cookie-btn {
+  min-height: 36px;
+  padding: 6px 16px;
+  border-radius: 999px;
+  border: 1px solid var(--border-subtle);
+  background: var(--button-bg);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.cookie-btn:hover {
+  border-color: var(--amber-bright);
+}
+
+.cookie-btn:focus-visible {
+  outline: 2px solid var(--amber-bright);
+  outline-offset: 2px;
+}
+
+@media (max-width: 1024px) {
+  .cookie-banner {
+    left: 8px;
+    right: 8px;
+    width: auto;
+    bottom: calc(var(--m-bottom) + 8px);
+  }
+}
+
+/* ============================================================================
    ARABIC (RTL) SUPPORT
    Text panels, controls and modals render right-to-left so Arabic reads
    naturally and mixed tokens such as "3D", "(74)" or Latin species names stay
@@ -2305,7 +2395,8 @@ html[lang="ar"] .era-context-banner,
 html[lang="ar"] .whatif-toast,
 html[lang="ar"] .bottom-control-dock,
 html[lang="ar"] .mobile-tabbar,
-html[lang="ar"] .modal-card {
+html[lang="ar"] .modal-card,
+html[lang="ar"] .cookie-banner {
   direction: rtl;
 }
 

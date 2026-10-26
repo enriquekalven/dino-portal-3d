@@ -6,7 +6,6 @@
   <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Ccircle cx='32' cy='32' r='30' fill='%230f172a'/%3E%3Ctext x='32' y='44' font-size='34' text-anchor='middle'%3E%F0%9F%A6%96%3C/text%3E%3C/svg%3E" />
   <title>DinoVerse 3D — Hyper-Realistic Prehistoric Portal &amp; Paleontology Lab</title>
   <script src="./src/backdrop-boot.js"></script>
-  <script src="./src/analytics.js" defer></script>
   <link rel="stylesheet" href="./styles.css" />
 </head>
 <body>
@@ -79,6 +78,17 @@
             🌙 <span class="lbl-theme">Dark</span>
           </button>
         </div>
+        <button
+          id="btn-cookie-settings"
+          class="top-action-btn top-action-btn--cookie"
+          type="button"
+          aria-controls="cookie-banner"
+          aria-expanded="false"
+          title="Cookie settings"
+          aria-label="Cookie settings"
+        >
+          🍪
+        </button>
         <label class="lang-switcher-pill" for="lang-select" title="Select Portal Language">
           <span class="lang-globe-icon" aria-hidden="true">🌐</span>
           <select id="lang-select" class="lang-select" aria-label="Select Portal Language">
@@ -518,6 +528,35 @@
       <div id="atlas-grid-body" class="atlas-grid-body"></div>
     </div>
   </div>
+
+  <!-- Cookie consent: Google Analytics loads only after "Accept" (see src/consent.js) -->
+  <section
+    id="cookie-banner"
+    class="cookie-banner"
+    role="dialog"
+    aria-modal="false"
+    aria-labelledby="cookie-banner-title"
+    aria-describedby="cookie-banner-text"
+    tabindex="-1"
+    hidden
+  >
+    <h2 id="cookie-banner-title" class="cookie-banner-title">🍪 Cookies &amp; Privacy</h2>
+    <p id="cookie-banner-text" class="cookie-banner-text">
+      We use Google Analytics cookies to count visits and see which features people enjoy, so we can improve DinoVerse.
+      We never show ads or build personal profiles. You can change your choice anytime with the 🍪 button at the top.
+    </p>
+    <a
+      id="cookie-learn-more"
+      class="cookie-banner-link"
+      href="https://policies.google.com/technologies/partner-sites"
+      target="_blank"
+      rel="noopener noreferrer"
+    >How Google uses this data</a>
+    <div class="cookie-banner-actions">
+      <button id="btn-cookie-decline" type="button" class="cookie-btn">Decline</button>
+      <button id="btn-cookie-accept" type="button" class="cookie-btn">Accept analytics</button>
+    </div>
+  </section>
 
   <script type="module" src="./src/main.js"></script>
 </body>

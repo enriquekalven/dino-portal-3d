@@ -12,6 +12,7 @@ import {
   QUIZ_LOCALIZATIONS,
 } from './i18n/locales.js';
 import { getLocalizedSpecies } from './i18n/speciesLocales.js';
+import { initCookieConsent } from './consent.js';
 
 /**
  * main.js — Safe DOM Controller for DinoVerse 3D (9-Language Internationalized Edition).
@@ -1495,6 +1496,27 @@ function applyStaticUiTranslations() {
     langSelect.value = currentLang;
   }
 
+  // Cookie consent banner + 🍪 settings button
+  const cookieSettingsBtn = document.getElementById('btn-cookie-settings');
+  if (cookieSettingsBtn) {
+    cookieSettingsBtn.title = s.cookieSettingsTitle;
+    cookieSettingsBtn.setAttribute('aria-label', s.cookieSettingsTitle);
+  }
+  const cookieTitle = document.getElementById('cookie-banner-title');
+  if (cookieTitle) cookieTitle.textContent = s.cookieTitle;
+  const cookieText = document.getElementById('cookie-banner-text');
+  if (cookieText) cookieText.textContent = s.cookieText;
+  const cookieLink = document.getElementById('cookie-learn-more');
+  if (cookieLink) {
+    cookieLink.textContent = s.cookieLearnMore;
+    const googleHl = currentLang === 'pt' ? 'pt-BR' : currentLang;
+    cookieLink.href = `https://policies.google.com/technologies/partner-sites?hl=${encodeURIComponent(googleHl)}`;
+  }
+  const cookieAccept = document.getElementById('btn-cookie-accept');
+  if (cookieAccept) cookieAccept.textContent = s.cookieAccept;
+  const cookieDecline = document.getElementById('btn-cookie-decline');
+  if (cookieDecline) cookieDecline.textContent = s.cookieDecline;
+
   // Left Roster Panel
   const rosterSheetTitle = document.querySelector('#roster-panel .sheet-title');
   if (rosterSheetTitle) rosterSheetTitle.textContent = s.sheetPickCreature;
@@ -1760,6 +1782,7 @@ window.addEventListener('keydown', (e) => {
 
 // Boot Application
 applyStaticUiTranslations();
+initCookieConsent();
 renderEraTabs();
 renderSpeciesRoster();
 engine.init();

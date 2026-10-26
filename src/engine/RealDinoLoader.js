@@ -428,17 +428,43 @@ async function getGLTFLoader() {
   return sharedLoader;
 }
 
+// Network-level failures surface as TypeError. Chrome occasionally drops an in-flight
+// request before it reaches the network while the main thread is busy decoding another
+// model, so those (and 5xx responses) are retried; 404s and other 4xx fail fast.
+const GLB_FETCH_RETRY_DELAYS_MS = [300, 1200];
+
+async function fetchGLBOnce(url) {
+  const res = await fetch(url);
+  if (!res.ok) {
+    const err = new Error(`Failed to fetch ${url} (${res.status})`);
+    err.retryable = res.status >= 500;
+    throw err;
+  }
+  return res.arrayBuffer();
+}
+
+async function fetchGLBWithRetry(url) {
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await fetchGLBOnce(url);
+    } catch (err) {
+      const retryable = err instanceof TypeError || err.retryable === true;
+      if (!retryable || attempt >= GLB_FETCH_RETRY_DELAYS_MS.length) throw err;
+      await new Promise((resolve) => setTimeout(resolve, GLB_FETCH_RETRY_DELAYS_MS[attempt]));
+    }
+  }
+}
+
 async function fetchGLBBuffer(url) {
   if (bufferCache.has(url)) {
     return bufferCache.get(url);
   }
-  const promise = fetch(url).then((res) => {
-    if (!res.ok) {
-      throw new Error(`Failed to fetch ${url} (${res.status})`);
-    }
-    return res.arrayBuffer();
-  });
+  const promise = fetchGLBWithRetry(url);
   bufferCache.set(url, promise);
+  // Never cache a failure: a later request (e.g. picking the species in the lab) tries again.
+  promise.catch(() => {
+    if (bufferCache.get(url) === promise) bufferCache.delete(url);
+  });
   return promise;
 }
 

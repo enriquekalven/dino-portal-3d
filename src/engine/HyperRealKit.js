@@ -5,7 +5,7 @@ import * as THREE from '../../vendor/three/build/three.module.js';
  *
  * 1. Tileable multi-octave gradient noise + tileable Worley (cellular) noise.
  * 2. Pure (DOM-free) multi-layer surface synthesizer producing albedo, height, roughness
- *    for archosaur scales, pennaceous feathers, striated muscle, fossil bone, vascular
+ *    for archosaur scales, pennaceous feathers, fossil bone, vascular
  *    membranes, keratin (teeth / claws / horns / beaks), bark, foliage and terrain.
  * 3. Height → tangent-space normal map (Sobel) + roughness map packing.
  * 4. MeshPhysicalMaterial factory with natural pigment palette, clearcoat skin sheen,
@@ -278,7 +278,7 @@ export function shadeHex(hex, factor) {
 // -----------------------------------------------------------------------------
 /**
  * @param {object} p
- * @param {string} p.style  scales | feathers | muscle | bone | sail | keratin | bark | foliage | ground
+ * @param {string} p.style  scales | feathers | bone | sail | keratin | bark | foliage | ground
  * @param {number} p.size   texture edge length (power of two)
  * @param {number[]} p.baseRgb / p.accentRgb  0..255 colors
  * @param {number} p.scale  macro noise period (tiles per texture)
@@ -411,18 +411,6 @@ export function synthesizeSurface(p) {
         // only height steps are at tip arcs — exactly where real feathers overlap.
         h = 0.42 + 0.38 * f.t + 0.05 * barb + 0.08 * rachis;
         ro = 0.74 - 0.16 * barb - 0.08 * rachis + 0.08 * tipDark;
-      } else if (style === 'muscle') {
-        const macro = n2.fbm(px * 0.5, py * 0.5, 3, macroPeriod);
-        const wobble = n2.fbm(px * 1.5, py * 0.5, 3, period * 1.5, macroPeriod);
-        const fiber = 0.5 + 0.5 * Math.sin((py * 9 + wobble * 1.6) * Math.PI);
-        const sheen = Math.pow(fiber, 3);
-        const t = clamp01(0.55 * Math.pow(1 - fiber, 1.6) + macro * 0.3);
-        const k = 0.88 + 0.22 * sheen;
-        r = lerp(base[0], acc[0], t) * k;
-        g = lerp(base[1], acc[1], t) * k;
-        b = lerp(base[2], acc[2], t) * k;
-        h = fiber * 0.7 + macro * 0.3;
-        ro = 0.62 - 0.3 * sheen;
       } else if (style === 'bone') {
         const grain = n2.fbm(px * 1.5, py * 0.5, 4, period * 1.5, macroPeriod);
         const macro = n2.fbm(px * 0.5, py * 0.5, 3, macroPeriod);

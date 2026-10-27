@@ -20,7 +20,7 @@ An interactive, offline-ready 3D educational portal for kids, students, and pale
 4. **Human & School Bus Scale Comparator**
    - Toggle a 3D **10-Year-Old Kid (1.4 m)**, **Adult Paleontologist (1.8 m)**, and **Yellow School Bus (11.0 m)** right beside the dinosaur in the 3D scene and in the 2D scale comparison chart.
 
-5. **Living Soundscape & Bio-Acoustic Synthesizer (`src/audio/BioAcousticAudio.js`)**
+5. **Living Soundscape & Bio-Acoustic Synthesizer (`src/engine/BioAcousticAudio.js`)**
    - **12 species-specific procedural calls** built from formant filter banks, roughness modulation, breath noise, and outdoor convolution reverb (*T. rex* 42 Hz closed-mouth infrasonic boom, sauropod bellows, *Diplodocus* supersonic tail-whip crack, *Parasaurolophus* 148 Hz hollow-crest resonance, dromaeosaur shrieks, pterosaur screeches, and underwater sonar click-trains).
    - **Read-Aloud Narrator**: Supports Google Cloud Text-to-Speech **Chirp 3 HD** voices via `server.py` (`/api/tts`) with automatic fallback to browser Web Speech API voices on static hosting.
 

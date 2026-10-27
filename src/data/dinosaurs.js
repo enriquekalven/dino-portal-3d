@@ -1689,7 +1689,7 @@ const BASE_SPECIES = [
     scientificName: 'Carnotaurus sastrei',
     pronunciation: 'KAR-noh-TORE-us',
     meaning: '"Meat-Eating Bull"',
-    eraId: 'early-cretaceous',
+    eraId: 'late-cretaceous',
     periodLabel: 'Late Cretaceous South America (72–69 MYA)',
     paleoMa: 71,
     clade: 'Theropoda (Abelisauridae)',

@@ -19,9 +19,8 @@ import { upgradeRigWithRealGLB } from './RealDinoLoader.js';
  * 2. Hyper-real surfacing: tileable Worley scale tessellation / feather vanes with tangent normal maps,
  *    natural pigment palette, clearcoat skin sheen, GPU countershading, keratin teeth/claws/horns/beaks,
  *    living eyes (iris, slit/round pupil, wet cornea, blinking lids, micro-saccades), nostrils, palate & tongue.
- * 3. 3-Layer Anatomical X-Ray System ('skin' | 'muscle' | 'skeleton' | 'xray'):
- *    - Skin Layer, Muscle & Organ Layer (Beating 4-Chambered Heart, Avian Air-Sac Lungs, Gizzard, Brain),
- *      Skeleton/Fossil Layer (articulated skull, vertebral column, ribcage, pelvis, limb bones).
+ * 3. 2-Layer Anatomical System ('skin' | 'skeleton'):
+ *    - Skin Layer and Skeleton/Fossil Layer (articulated skull, vertebral column, ribcage, pelvis, limb bones).
  * 4. 3D Human-to-Dino Scale Comparator: 10-Year-Old Kid (1.4m), Adult Paleontologist (1.8m), Yellow School Bus (11.0m).
  * 5. Era Habitat Dioramas with deferred (idle-time) creature population.
  */
@@ -1069,7 +1068,7 @@ function skinOptions(species, cfg, extra = {}) {
 }
 
 // -----------------------------------------------------------------------------
-// 2. SHARED ANATOMICAL MATERIALS (MUSCLE / ORGAN / SKELETON X-RAY LAYERS)
+// 2. SHARED ANATOMICAL MATERIALS (FOSSIL SKELETON LAYER)
 // -----------------------------------------------------------------------------
 function createAnatomicalMaterials() {
   const boneMat = makePBRMaterial('fossilBone', '#efe2c4', '#8a5a2b', {
@@ -1078,43 +1077,6 @@ function createAnatomicalMaterials() {
     bumpScale: 0.07,
     clearcoat: 0.08,
   });
-  const muscleShellMat = makePBRMaterial('striatedMuscle', '#9f1d1d', '#3f0a0a', {
-    style: 'muscle',
-    roughness: 0.38,
-    bumpScale: 0.09,
-    transparent: true,
-    opacity: 0.36,
-    clearcoat: 0.35,
-  });
-  const heartMat = new THREE.MeshPhysicalMaterial({
-    color: 0xef4444,
-    emissive: 0xdc2626,
-    emissiveIntensity: 0.75,
-    roughness: 0.25,
-    clearcoat: 0.6,
-  });
-  const lungMat = new THREE.MeshStandardMaterial({
-    color: 0x38bdf8,
-    emissive: 0x0284c7,
-    emissiveIntensity: 0.55,
-    roughness: 0.3,
-    transparent: true,
-    opacity: 0.85,
-  });
-  const stomachMat = new THREE.MeshStandardMaterial({
-    color: 0x10b981,
-    emissive: 0x059669,
-    emissiveIntensity: 0.45,
-    roughness: 0.38,
-    transparent: true,
-    opacity: 0.82,
-  });
-  const brainMat = new THREE.MeshStandardMaterial({
-    color: 0xf472b6,
-    emissive: 0xdb2777,
-    emissiveIntensity: 0.7,
-    roughness: 0.3,
-  });
   const ghostMat = new THREE.MeshStandardMaterial({
     color: 0x38bdf8,
     transparent: true,
@@ -1122,13 +1084,12 @@ function createAnatomicalMaterials() {
     roughness: 0.2,
     depthWrite: false,
   });
-  return { boneMat, muscleShellMat, heartMat, lungMat, stomachMat, brainMat, ghostMat };
+  return { boneMat, ghostMat };
 }
 
 /**
- * Attaches an internal articulated skeleton (ribcage, spine vertebrae, pelvis) and
- * internal organs (beating heart, avian air-sac lungs, stomach/gastroliths, brain)
- * to a creature's torso and head groups.
+ * Attaches an internal articulated skeleton (ribcage, spine vertebrae, pelvis,
+ * skull, tail and limb bones) to a creature's torso and head groups.
  */
 function attachInternalAnatomyAndSkeleton(
   torsoGroup,
@@ -1141,10 +1102,6 @@ function attachInternalAnatomyAndSkeleton(
   const skeletonGroup = new THREE.Group();
   skeletonGroup.visible = false;
   torsoGroup.add(skeletonGroup);
-
-  const organGroup = new THREE.Group();
-  organGroup.visible = false;
-  torsoGroup.add(organGroup);
 
   const lengthScale = opts.lengthScale || 1.0;
   const ribRadius = opts.ribRadius || 0.38;
@@ -1228,9 +1185,8 @@ function attachInternalAnatomyAndSkeleton(
     limbBones.push(bone);
   });
 
-  // 5. Internal Skull Bone & Brain inside Head Group
+  // 5. Internal Skull Bone inside Head Group
   let skullBone = null;
-  let brainMesh = null;
   if (headGroup) {
     skullBone = new THREE.Mesh(
       new THREE.ConeGeometry(0.18, 0.52, 10),
@@ -1240,106 +1196,41 @@ function attachInternalAnatomyAndSkeleton(
     skullBone.position.set(opts.reverseFacing ? -0.25 : 0.25, 0.02, 0);
     skullBone.visible = false;
     headGroup.add(skullBone);
-
-    brainMesh = new THREE.Mesh(new THREE.SphereGeometry(0.075, 14, 14), anatMats.brainMat);
-    brainMesh.scale.set(1.3, 0.9, 0.95);
-    brainMesh.position.set(opts.reverseFacing ? -0.06 : 0.06, 0.1, 0);
-    brainMesh.visible = false;
-    headGroup.add(brainMesh);
-  }
-
-  // 6. Beating 4-Chambered Heart + Avian Air-Sac Lungs + Digestive Stomach with Gastroliths
-  const heartMesh = new THREE.Mesh(new THREE.SphereGeometry(0.12, 16, 16), anatMats.heartMat);
-  heartMesh.scale.set(1.15, 1.3, 0.95);
-  heartMesh.position.set((opts.reverseFacing ? -0.35 : 0.35) * lengthScale, 0.04, 0.05);
-  organGroup.add(heartMesh);
-
-  const lungsGroup = new THREE.Group();
-  [-0.13, 0.13].forEach((zSide) => {
-    const lung = new THREE.Mesh(new THREE.CapsuleGeometry(0.1, 0.34, 10, 14), anatMats.lungMat);
-    lung.rotation.z = Math.PI / 2.2;
-    lung.position.set((opts.reverseFacing ? -0.12 : 0.12) * lengthScale, 0.14, zSide);
-    lungsGroup.add(lung);
-  });
-  organGroup.add(lungsGroup);
-
-  const stomachMesh = new THREE.Mesh(new THREE.SphereGeometry(0.18, 16, 16), anatMats.stomachMat);
-  stomachMesh.scale.set(1.4, 0.95, 1.05);
-  stomachMesh.position.set((opts.reverseFacing ? 0.12 : -0.12) * lengthScale, -0.06, 0);
-  organGroup.add(stomachMesh);
-
-  // Gastrolith Gizzard Stones inside stomach
-  for (let g = 0; g < 6; g++) {
-    const stone = new THREE.Mesh(
-      new THREE.DodecahedronGeometry(0.028, 0),
-      new THREE.MeshStandardMaterial({ color: 0xfde047, emissive: 0xca8a04, emissiveIntensity: 0.5 })
-    );
-    stone.position.set(
-      stomachMesh.position.x + (g - 2.5) * 0.045,
-      stomachMesh.position.y - 0.03 + (g % 2) * 0.03,
-      (g % 3 - 1) * 0.04
-    );
-    organGroup.add(stone);
   }
 
   return {
     skeletonGroup,
-    organGroup,
     tailBones,
     limbBones,
     skullBone,
-    brainMesh,
-    heartMesh,
-    lungsGroup,
-    animateOrgans(time) {
-      if (organGroup.visible) {
-        const beat = 1.0 + Math.pow(Math.max(0, Math.sin(time * 7.2)), 4) * 0.28;
-        heartMesh.scale.set(1.15 * beat, 1.3 * beat, 0.95 * beat);
-        const breath = 1.0 + Math.sin(time * 2.8) * 0.14;
-        lungsGroup.scale.set(1.0, breath, breath);
-      }
-      if (brainMesh && brainMesh.visible) {
-        brainMesh.material.emissiveIntensity = 0.55 + Math.sin(time * 5.0) * 0.25;
-      }
-    },
   };
 }
 
 /**
- * Applies the active X-Ray Anatomy Mode ('skin' | 'muscle' | 'skeleton' | 'xray')
+ * Applies the active Anatomy Mode ('skin' | 'skeleton')
  * to any built creature rig. Hard tissue (teeth, claws, horns, beaks) persists in every
- * layer like a real fossil; eyes vanish only in pure skeleton view; feathers are skin-only.
+ * layer like a real fossil; eyes and feathers are shown in skin view.
  */
 export function applyAnatomyLayerToCreature(creatureRig, mode = 'skin') {
   if (!creatureRig) return;
   const { skinMeshes, anat, anatMats, eyes = [], appendageMeshes = [] } = creatureRig;
 
   const showSkinFull = mode === 'skin';
-  const showMuscle = mode === 'muscle' || mode === 'xray';
-  const showSkeleton = mode === 'skeleton' || mode === 'xray';
+  const showSkeleton = !showSkinFull;
 
   skinMeshes.forEach(({ mesh, origMat }) => {
     mesh.visible = true;
-    if (showSkinFull) {
-      mesh.material = origMat;
-    } else if (mode === 'muscle' || mode === 'xray') {
-      mesh.material = anatMats.muscleShellMat;
-    } else {
-      // 'skeleton' mode: translucent silhouette + bright bones
-      mesh.material = anatMats.ghostMat;
-    }
+    mesh.material = showSkinFull ? origMat : anatMats.ghostMat;
   });
 
   appendageMeshes.forEach((mesh) => {
     mesh.visible = showSkinFull;
   });
-  eyes.forEach((eye) => eye.setVisible(mode !== 'skeleton'));
+  eyes.forEach((eye) => eye.setVisible(showSkinFull));
 
   if (anat) {
     anat.skeletonGroup.visible = showSkeleton;
-    anat.organGroup.visible = showMuscle;
     if (anat.skullBone) anat.skullBone.visible = showSkeleton;
-    if (anat.brainMesh) anat.brainMesh.visible = showMuscle;
     anat.tailBones.forEach((b) => {
       b.visible = showSkeleton;
     });
@@ -1497,7 +1388,7 @@ export function buildPrehistoricCreature(species, scale = 1.0, options = {}) {
   const skinMeshes = [];
   const appendageMeshes = [];
   const hardTissueMeshes = [];
-  const anatSet = new Set([anatMats.boneMat, anatMats.heartMat, anatMats.lungMat, anatMats.stomachMat, anatMats.brainMat]);
+  const anatSet = new Set([anatMats.boneMat]);
   built.group.traverse((child) => {
     if (!child.isMesh) return;
     refineMeshGeometry(child);
@@ -2069,7 +1960,6 @@ function buildParametricTheropod(species, cfg, anatMats) {
         footGroup.rotation.z = -hipGroup.rotation.z * 0.65;
       });
 
-      anat.animateOrgans(time);
     },
   };
 }
@@ -2312,7 +2202,6 @@ function buildParametricSauropod(species, cfg, anatMats) {
         kneeGroup.rotation.z = Math.max(0, -Math.cos(cyc + phase)) * 0.34;
       });
 
-      anat.animateOrgans(time);
     },
   };
 }
@@ -2573,7 +2462,6 @@ function buildParametricCeratopsian(species, cfg, anatMats) {
         kneeGroup.rotation.z = Math.max(0, -Math.cos(cyc + phase)) * 0.4;
       });
 
-      anat.animateOrgans(time);
     },
   };
 }
@@ -2795,7 +2683,6 @@ function buildParametricStegosaur(species, cfg, anatMats) {
         hipGroup.rotation.z = s * 0.28;
         kneeGroup.rotation.z = Math.max(0, -Math.cos(cyc + phase)) * 0.34;
       });
-      anat.animateOrgans(time);
     },
   };
 }
@@ -3041,7 +2928,6 @@ function buildParametricAnkylosaur(species, cfg, anatMats) {
         hipGroup.rotation.z = s * 0.26;
         kneeGroup.rotation.z = Math.max(0, -Math.cos(cyc + phase)) * 0.32;
       });
-      anat.animateOrgans(time);
     },
   };
 }
@@ -3284,7 +3170,6 @@ function buildParametricHadrosaur(species, cfg, anatMats) {
         kneeGroup.rotation.z = -Math.max(0, c) * 0.45 - 0.08;
         footGroup.rotation.z = -hipGroup.rotation.z * 0.65;
       });
-      anat.animateOrgans(time);
     },
   };
 }
@@ -3488,7 +3373,6 @@ function buildParametricSynapsid(species, cfg, anatMats) {
         hipGroup.rotation.z = s * 0.32;
         kneeGroup.rotation.z = Math.max(0, -Math.cos(cyc + phase)) * 0.35;
       });
-      anat.animateOrgans(time);
     },
   };
 }
@@ -3763,7 +3647,6 @@ function buildParametricPterosaur(species, cfg, anatMats) {
       hindLegs.forEach(({ hipGroup, phase }) => {
         hipGroup.rotation.z = -1.15 + Math.sin(time * spd + phase) * 0.08;
       });
-      anat.animateOrgans(time);
     },
   };
 }
@@ -4012,7 +3895,6 @@ function buildParametricAvian(species, cfg, anatMats) {
         hipGroup.rotation.z = -0.35 + Math.sin(time * spd + phase) * 0.16;
         kneeGroup.rotation.z = -0.45;
       });
-      anat.animateOrgans(time);
     },
   };
 }
@@ -4196,7 +4078,6 @@ function buildParametricMarinePredator(species, cfg, anatMats) {
       flippers.forEach(({ flipPivot, phase, side }) => {
         flipPivot.rotation.x = side * Math.sin(cyc + phase) * 0.35;
       });
-      anat.animateOrgans(time);
     },
   };
 }
@@ -4365,7 +4246,6 @@ function buildParametricPlesiosaur(species, cfg, anatMats) {
       flippers.forEach(({ flipPivot, phase, side }) => {
         flipPivot.rotation.x = side * Math.sin(cyc + phase) * 0.45;
       });
-      anat.animateOrgans(time);
     },
   };
 }

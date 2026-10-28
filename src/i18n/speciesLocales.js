@@ -1349,6 +1349,39 @@ function localizeHotspotTitle(h, lang) {
   return TABLE[kind]?.[lang] || h.title;
 }
 
+function formatLocalizedWeight(m, lang) {
+  const kg = Number(m?.weightKg) || 500;
+  if (kg >= 1000) {
+    const tons = Math.round((kg / 1000) * 10) / 10;
+    const units = {
+      es: `${tons} toneladas`,
+      'zh-CN': `${tons} 吨`,
+      'zh-HK': `${tons} 噸`,
+      it: `${tons} tonnellate`,
+      pt: `${tons} toneladas`,
+      fr: `${tons} tonnes`,
+      de: `${tons} Tonnen`,
+      ar: `${tons} طن`,
+      ja: `${tons}トン`,
+      ko: `${tons}톤`,
+    };
+    return units[lang] || m?.weightLabel || `${tons} tons`;
+  }
+  const units = {
+    es: `${kg} kg`,
+    'zh-CN': `${kg} 千克`,
+    'zh-HK': `${kg} 公斤`,
+    it: `${kg} kg`,
+    pt: `${kg} kg`,
+    fr: `${kg} kg`,
+    de: `${kg} kg`,
+    ar: `${kg} كجم`,
+    ja: `${kg}キログラム`,
+    ko: `${kg}kg`,
+  };
+  return units[lang] || m?.weightLabel || `${kg} kg`;
+}
+
 function composeLocalizedBiology({
   sp,
   localName,
@@ -1374,6 +1407,7 @@ function composeLocalizedBiology({
         .replace('{year}', String(d.year))
         .replace('{paleontologist}', d.paleontologist)
     : ui.discoveryGlobal;
+  const weightStr = formatLocalizedWeight(m, lang);
 
   if (lang === 'es') {
     return {
@@ -1383,11 +1417,11 @@ function composeLocalizedBiology({
       dietLabel: localDiet,
       domainLabel: localDomain,
       stanceLabel: localStance,
-      story: `${localName} (${sp.scientificName}, que significa ${localMeaning}) vivió durante el ${localPeriod} hace unos ${sp.paleoMa} millones de años en la era del ${eraName}. Como ${localDiet.toLowerCase()} ${localStance.toLowerCase()} del clado ${sp.clade}, alcanzaba ${m.lengthM} metros de longitud, ${m.heightM} metros de altura y una masa de ${m.weightLabel}, desplazándose a hasta ${m.speedKmh} km/h entre ${eraFlora.toLowerCase()}.`,
+      story: `${localName}, cuyo nombre significa ${localMeaning}, vivió durante el ${localPeriod}, hace unos ${sp.paleoMa} millones de años. Como ${localDiet.toLowerCase()} ${localStance.toLowerCase()}, alcanzaba ${m.lengthM} metros de longitud, ${m.heightM} metros de altura y un peso de ${weightStr}. Podía desplazarse a hasta ${m.speedKmh} kilómetros por hora entre ${eraFlora.toLowerCase()}.`,
       funFacts: [
         `Sus fósiles fueron descubiertos en ${d.location} (${d.country}) en la formación ${d.formation} (${d.year}) por ${d.paleontologist}.`,
-        `Estudios biomecánicos estiman una velocidad máxima de ${m.speedKmh} km/h y una fuerza de mordida de ${m.biteForceN.toLocaleString()} N.`,
-        `Vivió en una atmósfera prehistórica con ${c.o2Pct}% de oxígeno, ${c.co2Ppm} ppm de CO₂ y temperaturas medias de +${c.tempC} °C.`,
+        `Estudios biomecánicos estiman una velocidad máxima de ${m.speedKmh} kilómetros por hora y una fuerza de mordida de ${m.biteForceN.toLocaleString()} newtons.`,
+        `Vivió en una atmósfera prehistórica con ${c.o2Pct}% de oxígeno, ${c.co2Ppm} ppm de dióxido de carbono y temperaturas medias de ${c.tempC} grados Celsius.`,
       ],
       hotspots: hsRaw.map((h) => ({
         pos: h.pos,
@@ -1410,11 +1444,11 @@ function composeLocalizedBiology({
       dietLabel: localDiet,
       domainLabel: localDomain,
       stanceLabel: localStance,
-      story: `${localName}（学名：${sp.scientificName}，意为${localMeaning}）生活在距今约 ${sp.paleoMa} 百万年前的${localPeriod}（${eraName}）。作为 ${sp.clade} 演化支中的${localStance}${localDiet}，它体长可达 ${m.lengthM} 米，高 ${m.heightM} 米，体重约 ${m.weightLabel}，最高移动速度达 ${m.speedKmh} 公里/小时，活跃于当时的${eraFlora}生态系统中。`,
+      story: `${localName}，名字意为${localMeaning}，生活在距今约 ${sp.paleoMa} 百万年前的${eraName}。作为一种${localStance}的${localDiet}，它体长可达 ${m.lengthM} 米，身高 ${m.heightM} 米，体重约 ${weightStr}。它的最高移动速度达每小时 ${m.speedKmh} 公里，活跃于当时的${eraFlora}生态系统中。`,
       funFacts: [
         `${localName}的代表性化石于 ${d.year} 年由古生物学家 ${d.paleontologist} 在 ${d.country}（${d.location}）的 ${d.formation} 地层中发掘。`,
-        `生物力学模型显示其最高速度可达 ${m.speedKmh} 公里/小时，颌部咬合力约为 ${m.biteForceN.toLocaleString()} 牛顿（N）。`,
-        `它生活的古地球大气层含氧量约为 ${c.o2Pct}%，二氧化碳浓度约 ${c.co2Ppm} ppm，全球平均气温约 +${c.tempC}°C。`,
+        `生物力学模型显示其最高速度可达每小时 ${m.speedKmh} 公里，颌部咬合力约为 ${m.biteForceN.toLocaleString()} 牛顿。`,
+        `它生活的古地球大气层含氧量约为 ${c.o2Pct}%，二氧化碳浓度约 ${c.co2Ppm} ppm，全球平均气温约 ${c.tempC} 摄氏度。`,
       ],
       hotspots: hsRaw.map((h) => ({
         pos: h.pos,
@@ -1437,11 +1471,11 @@ function composeLocalizedBiology({
       dietLabel: localDiet,
       domainLabel: localDomain,
       stanceLabel: localStance,
-      story: `${localName}（學名：${sp.scientificName}，意思係${localMeaning}）生活喺距今約 ${sp.paleoMa} 百萬年前嘅${localPeriod}（${eraName}）。作為 ${sp.clade} 演化支入面嘅${localStance}${localDiet}，佢體長可達 ${m.lengthM} 米，高 ${m.heightM} 米，體重約 ${m.weightLabel}，最高移動速度達時速 ${m.speedKmh} 公里，活躍於當時嘅${eraFlora}生態環境。`,
+      story: `${localName}，名字意思係${localMeaning}，生活喺距今約 ${sp.paleoMa} 百萬年前嘅${eraName}。作為一種${localStance}嘅${localDiet}，佢體長可達 ${m.lengthM} 米，身高 ${m.heightM} 米，體重約 ${weightStr}。佢最高移動速度達時速 ${m.speedKmh} 公里，活躍於當時嘅${eraFlora}生態環境。`,
       funFacts: [
         `${localName}嘅代表性化石喺 ${d.year} 年由古生物學家 ${d.paleontologist} 喺 ${d.country}（${d.location}）嘅 ${d.formation} 地層發掘出土。`,
-        `生物力學模型顯示佢最高時速可達 ${m.speedKmh} 公里，顎部咬合力約為 ${m.biteForceN.toLocaleString()} 牛頓（N）。`,
-        `佢生活嘅古地球大氣層含氧量約為 ${c.o2Pct}%，二氧化碳濃度約 ${c.co2Ppm} ppm，全球平均氣溫約 +${c.tempC}°C。`,
+        `生物力學模型顯示佢最高時速可達 ${m.speedKmh} 公里，顎部咬合力約為 ${m.biteForceN.toLocaleString()} 牛頓。`,
+        `佢生活嘅古地球大氣層含氧量約為 ${c.o2Pct}%，二氧化碳濃度約 ${c.co2Ppm} ppm，全球平均氣溫約 ${c.tempC} 攝氏度。`,
       ],
       hotspots: hsRaw.map((h) => ({
         pos: h.pos,
@@ -1464,11 +1498,11 @@ function composeLocalizedBiology({
       dietLabel: localDiet,
       domainLabel: localDomain,
       stanceLabel: localStance,
-      story: `${localName} (${sp.scientificName}, che significa ${localMeaning}) visse durante il ${localPeriod}, circa ${sp.paleoMa} milioni di anni fa (${eraName}). Come ${localDiet.toLowerCase()} ${localStance.toLowerCase()} del clade ${sp.clade}, raggiungeva ${m.lengthM} metri di lunghezza, ${m.heightM} metri di altezza e un peso di ${m.weightLabel}, muovendosi fino a ${m.speedKmh} km/h tra ${eraFlora.toLowerCase()}.`,
+      story: `${localName}, il cui nome significa ${localMeaning}, visse durante il ${localPeriod}, circa ${sp.paleoMa} milioni di anni fa. Come ${localDiet.toLowerCase()} ${localStance.toLowerCase()}, raggiungeva ${m.lengthM} metri di lunghezza, ${m.heightM} metri di altezza e un peso di ${weightStr}. Poteva muoversi fino a ${m.speedKmh} chilometri orari tra ${eraFlora.toLowerCase()}.`,
       funFacts: [
         `I suoi fossili sono stati scoperti a ${d.location} (${d.country}) nella formazione ${d.formation} (${d.year}) da ${d.paleontologist}.`,
-        `Le analisi biomeccaniche indicano una velocità massima di ${m.speedKmh} km/h e una forza del morso di ${m.biteForceN.toLocaleString()} N.`,
-        `Visse in un’atmosfera preistorica con il ${c.o2Pct}% di ossigeno, ${c.co2Ppm} ppm di CO₂ e temperature medie di +${c.tempC} °C.`,
+        `Le analisi biomeccaniche indicano una velocità massima di ${m.speedKmh} chilometri orari e una forza del morso di ${m.biteForceN.toLocaleString()} newton.`,
+        `Visse in un’atmosfera preistorica con il ${c.o2Pct}% di ossigeno, ${c.co2Ppm} ppm di anidride carbonica e temperature medie di ${c.tempC} gradi Celsius.`,
       ],
       hotspots: hsRaw.map((h) => ({
         pos: h.pos,
@@ -1491,11 +1525,11 @@ function composeLocalizedBiology({
       dietLabel: localDiet,
       domainLabel: localDomain,
       stanceLabel: localStance,
-      story: `${localName} (${sp.scientificName}, que significa ${localMeaning}) viveu durante o ${localPeriod}, há cerca de ${sp.paleoMa} milhões de anos (${eraName}). Como um ${localDiet.toLowerCase()} ${localStance.toLowerCase()} do clado ${sp.clade}, atingia ${m.lengthM} metros de comprimento, ${m.heightM} metros de altura e massa de ${m.weightLabel}, alcançando até ${m.speedKmh} km/h entre ${eraFlora.toLowerCase()}.`,
+      story: `${localName}, cujo nome significa ${localMeaning}, viveu durante o ${localPeriod}, há cerca de ${sp.paleoMa} milhões de anos. Como um ${localDiet.toLowerCase()} ${localStance.toLowerCase()}, atingia ${m.lengthM} metros de comprimento, ${m.heightM} metros de altura e massa de ${weightStr}. Alcançava até ${m.speedKmh} quilômetros por hora entre ${eraFlora.toLowerCase()}.`,
       funFacts: [
         `Seus fósseis foram descobertos em ${d.location} (${d.country}) na formação ${d.formation} (${d.year}) por ${d.paleontologist}.`,
-        `Simulações biomecânicas estimam velocidade máxima de ${m.speedKmh} km/h e força de mordida de ${m.biteForceN.toLocaleString()} N.`,
-        `Viveu em uma atmosfera pré-histórica com ${c.o2Pct}% de oxigênio, ${c.co2Ppm} ppm de CO₂ e temperatura média de +${c.tempC} °C.`,
+        `Simulações biomecânicas estimam velocidade máxima de ${m.speedKmh} quilômetros por hora e força de mordida de ${m.biteForceN.toLocaleString()} newtons.`,
+        `Viveu em uma atmosfera pré-histórica com ${c.o2Pct}% de oxigênio, ${c.co2Ppm} ppm de gás carbônico e temperatura média de ${c.tempC} graus Celsius.`,
       ],
       hotspots: hsRaw.map((h) => ({
         pos: h.pos,
@@ -1518,11 +1552,11 @@ function composeLocalizedBiology({
       dietLabel: localDiet,
       domainLabel: localDomain,
       stanceLabel: localStance,
-      story: `${localName} (${sp.scientificName}, signifiant ${localMeaning}) a vécu durant le ${localPeriod}, il y a environ ${sp.paleoMa} millions d’années (${eraName}). En tant que ${localDiet.toLowerCase()} ${localStance.toLowerCase()} du clade ${sp.clade}, il atteignait ${m.lengthM} mètres de long, ${m.heightM} mètres de haut et une masse de ${m.weightLabel}, se déplaçant jusqu’à ${m.speedKmh} km/h au cœur d’un paysage de ${eraFlora.toLowerCase()}.`,
+      story: `${localName}, dont le nom signifie ${localMeaning}, a vécu durant le ${localPeriod}, il y a environ ${sp.paleoMa} millions d’années. En tant que ${localDiet.toLowerCase()} ${localStance.toLowerCase()}, il atteignait ${m.lengthM} mètres de long, ${m.heightM} mètres de haut et une masse de ${weightStr}. Il se déplaçait jusqu’à ${m.speedKmh} kilomètres par heure au cœur d’un paysage de ${eraFlora.toLowerCase()}.`,
       funFacts: [
         `Ses fossiles ont été mis au jour à ${d.location} (${d.country}) dans la formation ${d.formation} (${d.year}) par ${d.paleontologist}.`,
-        `Les modèles biomécaniques estiment une vitesse de pointe de ${m.speedKmh} km/h et une force de morsure de ${m.biteForceN.toLocaleString()} N.`,
-        `Il évoluait sous une atmosphère préhistorique contenant ${c.o2Pct} % d’oxygène, ${c.co2Ppm} ppm de CO₂ et une température moyenne de +${c.tempC} °C.`,
+        `Les modèles biomécaniques estiment une vitesse de pointe de ${m.speedKmh} kilomètres par heure et une force de morsure de ${m.biteForceN.toLocaleString()} newtons.`,
+        `Il évoluait sous une atmosphère préhistorique contenant ${c.o2Pct} % d’oxygène, ${c.co2Ppm} ppm de dioxyde de carbone et une température moyenne de ${c.tempC} degrés Celsius.`,
       ],
       hotspots: hsRaw.map((h) => ({
         pos: h.pos,
@@ -1545,11 +1579,11 @@ function composeLocalizedBiology({
       dietLabel: localDiet,
       domainLabel: localDomain,
       stanceLabel: localStance,
-      story: `${localName} (${sp.scientificName}, Bedeutung: ${localMeaning}) lebte im Zeitabschnitt ${localPeriod} – vor rund ${sp.paleoMa} Millionen Jahren, in der Ära „${eraName}“. Dieser ${localDiet} aus der Klade ${sp.clade} erreichte eine Körperlänge von ${m.lengthM} Metern, eine Höhe von ${m.heightM} Metern und ein Gewicht von ${m.weightLabel}. Fortbewegung: ${localStance}, mit bis zu ${m.speedKmh} km/h. Lebensraum: ${eraFlora}.`,
+      story: `${localName}, dessen Name ${localMeaning} bedeutet, lebte vor rund ${sp.paleoMa} Millionen Jahren in der Ära ${eraName}. Dieser ${localDiet} erreichte eine Körperlänge von ${m.lengthM} Metern, eine Höhe von ${m.heightM} Metern und ein Gewicht von ${weightStr}. Er bewegte sich mit bis zu ${m.speedKmh} Kilometern pro Stunde durch ${eraFlora}.`,
       funFacts: [
         `Seine Fossilien wurden ${d.year} von ${d.paleontologist} in ${d.location} (${d.country}) entdeckt (Fundschicht: ${d.formation}).`,
-        `Biomechanische Modelle berechnen eine Höchstgeschwindigkeit von ${m.speedKmh} km/h und eine Beißkraft von ${m.biteForceN.toLocaleString()} N.`,
-        `Er lebte in einer urzeitlichen Atmosphäre mit ${c.o2Pct} % Sauerstoff, ${c.co2Ppm} ppm CO₂ und einer Durchschnittstemperatur von +${c.tempC} °C.`,
+        `Biomechanische Modelle berechnen eine Höchstgeschwindigkeit von ${m.speedKmh} Kilometern pro Stunde und eine Beißkraft von ${m.biteForceN.toLocaleString()} Newton.`,
+        `Er lebte in einer urzeitlichen Atmosphäre mit ${c.o2Pct} Prozent Sauerstoff, ${c.co2Ppm} ppm Kohlendioxid und einer Durchschnittstemperatur von ${c.tempC} Grad Celsius.`,
       ],
       hotspots: hsRaw.map((h) => ({
         pos: h.pos,
@@ -1572,11 +1606,11 @@ function composeLocalizedBiology({
       dietLabel: localDiet,
       domainLabel: localDomain,
       stanceLabel: localStance,
-      story: `عاش ${localName} (${sp.scientificName}، ومعنى اسمه ${localMeaning}) خلال فترة ${localPeriod} قبل نحو ${sp.paleoMa} مليون سنة (${eraName}). وهو ${localDiet} ${localStance} من فرع ${sp.clade}، بلغ طوله ${m.lengthM} م وارتفاعه ${m.heightM} م ووزنه نحو ${m.weightLabel}، وكانت سرعته تصل إلى ${m.speedKmh} كم/س. موطنه: ${eraFlora}.`,
+      story: `عاش ${localName}، ومعنى اسمه ${localMeaning}، قبل نحو ${sp.paleoMa} مليون سنة خلال ${eraName}. وهو ${localDiet} ${localStance}، بلغ طوله ${m.lengthM} متر وارتفاعه ${m.heightM} متر ووزنه نحو ${weightStr}. كانت سرعته تصل إلى ${m.speedKmh} كيلومتراً في الساعة في بيئة ${eraFlora}.`,
       funFacts: [
         `اكتشف ${d.paleontologist} حفرياته عام ${d.year} في ${d.location} (${d.country})، ضمن طبقات ${d.formation}.`,
-        `تُقدّر النماذج الميكانيكية الحيوية سرعته القصوى بنحو ${m.speedKmh} كم/س وقوة عضته بنحو ${m.biteForceN.toLocaleString()} نيوتن (N).`,
-        `عاش في غلاف جوي قديم بنسبة أكسجين ${c.o2Pct}% وثاني أكسيد الكربون ${c.co2Ppm} جزء في المليون ومتوسط حرارة +${c.tempC} درجة مئوية.`,
+        `تُقدّر النماذج الميكانيكية الحيوية سرعته القصوى بنحو ${m.speedKmh} كيلومتراً في الساعة وقوة عضته بنحو ${m.biteForceN.toLocaleString()} نيوتن.`,
+        `عاش في غلاف جوي قديم بنسبة أكسجين ${c.o2Pct}% وثاني أكسيد الكربون ${c.co2Ppm} جزء في المليون ومتوسط حرارة ${c.tempC} درجة مئوية.`,
       ],
       hotspots: hsRaw.map((h) => ({
         pos: h.pos,
@@ -1599,11 +1633,11 @@ function composeLocalizedBiology({
       dietLabel: localDiet,
       domainLabel: localDomain,
       stanceLabel: localStance,
-      story: `${localName}（学名：${sp.scientificName}、意味：${localMeaning}）は約${sp.paleoMa}百万年前の${localPeriod}（${eraName}）に生息していました。${sp.clade}に属する${localStance}の${localDiet}動物で、全長${m.lengthM}メートル、高さ${m.heightM}メートル、体重${m.weightLabel}に達し、${eraFlora}が広がる大地や海空を最高時速${m.speedKmh}kmで駆け抜けました。`,
+      story: `${localName}は、名前の意味が${localMeaning}で、約${sp.paleoMa}百万年前の${eraName}に生息していました。${localStance}の${localDiet}動物で、全長${m.lengthM}メートル、高さ${m.heightM}メートル、体重${weightStr}に達しました。${eraFlora}が広がる環境を、最高時速${m.speedKmh}キロメートルで駆け抜けました。`,
       funFacts: [
         `化石は${d.year}年に古生物学者 ${d.paleontologist} によって ${d.country}（${d.location}）の ${d.formation} から発見されました。`,
-        `生体力学シミュレーションにより、最高速度は時速${m.speedKmh}km、咬合力は約${m.biteForceN.toLocaleString()}ニュートン（N）と推定されています。`,
-        `当時の地球大気は酸素濃度${c.o2Pct}%、二酸化炭素濃度${c.co2Ppm}ppm、平均気温+${c.tempC}℃という環境でした。`,
+        `生体力学シミュレーションにより、最高速度は時速${m.speedKmh}キロメートル、咬合力は約${m.biteForceN.toLocaleString()}ニュートンと推定されています。`,
+        `当時の地球大気は酸素濃度${c.o2Pct}%、二酸化炭素濃度${c.co2Ppm}ppm、平均気温${c.tempC}度という環境でした。`,
       ],
       hotspots: hsRaw.map((h) => ({
         pos: h.pos,
@@ -1626,11 +1660,11 @@ function composeLocalizedBiology({
       dietLabel: localDiet,
       domainLabel: localDomain,
       stanceLabel: localStance,
-      story: `${localName}(학명: ${sp.scientificName}, 이름의 뜻: ${localMeaning})는 약 ${sp.paleoMa}백만 년 전 ${localPeriod}(${eraName})에 살았습니다. ${sp.clade} 분류군에 속하는 ${localStance} ${localDiet} 생물로, 몸길이 ${m.lengthM}m, 높이 ${m.heightM}m, 몸무게 ${m.weightLabel}에 달했으며 ${eraFlora} 생태계에서 최고 시속 ${m.speedKmh}km로 활동했습니다.`,
+      story: `${localName}는 이름의 뜻이 ${localMeaning}이며, 약 ${sp.paleoMa}백만 년 전 ${eraName}에 살았습니다. ${localStance} ${localDiet} 생물로, 몸길이 ${m.lengthM}미터, 높이 ${m.heightM}미터, 몸무게 ${weightStr}에 달했습니다. ${eraFlora} 생태계에서 최고 시속 ${m.speedKmh}킬로미터로 활동했습니다.`,
       funFacts: [
         `화석은 ${d.year}년 고생물학자 ${d.paleontologist}에 의해 ${d.country}(${d.location})의 ${d.formation} 지층에서 발굴되었습니다.`,
-        `생체역학 분석에 따르면 최고 속도는 시속 ${m.speedKmh}km, 무는 힘(치악력)은 약 ${m.biteForceN.toLocaleString()} N에 달했습니다.`,
-        `당시 고대 지구의 대기 산소 농도는 ${c.o2Pct}%, 이산화탄소는 ${c.co2Ppm} ppm, 평균 기온은 +${c.tempC}°C였습니다.`,
+        `생체역학 분석에 따르면 최고 속도는 시속 ${m.speedKmh}킬로미터, 무는 힘은 약 ${m.biteForceN.toLocaleString()}뉴턴에 달했습니다.`,
+        `당시 고대 지구의 대기 산소 농도는 ${c.o2Pct}%, 이산화탄소는 ${c.co2Ppm}ppm, 평균 기온은 섭씨 ${c.tempC}도였습니다.`,
       ],
       hotspots: hsRaw.map((h) => ({
         pos: h.pos,

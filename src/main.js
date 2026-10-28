@@ -950,13 +950,17 @@ btnNarrateStory.addEventListener('click', () => {
   const s = ui();
   const sp = engine.activeSpecies;
   const spLoc = getSpLoc(sp);
-  const fullSpeech = s.narrationTemplate
-    .replace('{name}', spLoc.name)
-    .replace('{sci}', sp.scientificName)
-    .replace('{meaning}', spLoc.meaning)
-    .replace('{period}', spLoc.periodLabel)
-    .replace('{story}', spLoc.story)
-    .replace('{fact}', spLoc.funFacts?.[0] || '');
+  const storyText = Array.isArray(spLoc.story) ? spLoc.story.join(' ') : String(spLoc.story || '');
+  const fullSpeech =
+    currentLang === 'en'
+      ? s.narrationTemplate
+          .replace('{name}', spLoc.name)
+          .replace('{sci}', sp.scientificName)
+          .replace('{meaning}', spLoc.meaning)
+          .replace('{period}', spLoc.periodLabel)
+          .replace('{story}', storyText)
+          .replace('{fact}', spLoc.funFacts?.[0] || '')
+      : `${storyText} ${spLoc.funFacts?.[1] || spLoc.funFacts?.[0] || ''}`.trim();
   audio.narrateText(fullSpeech, setNarrationButtonState);
 });
 

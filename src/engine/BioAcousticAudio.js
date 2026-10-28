@@ -55,6 +55,8 @@ export class BioAcousticAudio {
     this._narrationAbort = null;
     this._narrationSource = null;
     this._narrationToken = 0;
+    this._activeUtterance = null;
+    this._deviceTimer = null;
 
     this._ambience = null;
     this._idleTimer = null;
@@ -66,6 +68,13 @@ export class BioAcousticAudio {
     this.onVocalize = null;
 
     this._loadPrefs();
+    try {
+      if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+        window.speechSynthesis.getVoices();
+      }
+    } catch {
+      /* ignore */
+    }
   }
 
   // ---------------------------------------------------------------------------
@@ -1007,6 +1016,9 @@ export class BioAcousticAudio {
       try {
         const buffer = await this._fetchChirp(clean, controller.signal);
         if (token !== this._narrationToken) return;
+        if (ctx.state === 'suspended') {
+          await ctx.resume().catch(() => {});
+        }
         const source = ctx.createBufferSource();
         source.buffer = buffer;
         source.connect(this.narrationBus);
@@ -1030,7 +1042,7 @@ export class BioAcousticAudio {
       }
     }
 
-    this._speakWithDevice(clean, notify);
+    this._speakWithDevice(clean, notify, token);
   }
 
   _getBcp47ForLang() {
@@ -1050,72 +1062,208 @@ export class BioAcousticAudio {
     return map[this.language] || 'en-US';
   }
 
-  _pickDeviceVoice() {
+  _pickDeviceVoice(preferLocalOnly = false) {
     if (!('speechSynthesis' in window)) return null;
-    const voices = window.speechSynthesis.getVoices() || [];
+    const rawVoices = window.speechSynthesis.getVoices() || [];
+    if (!rawVoices.length) return null;
+
+    const voices = preferLocalOnly ? rawVoices.filter((v) => v.localService) : rawVoices;
     if (!voices.length) return null;
 
     const lang = this.language || 'en';
+    const normLang = (v) => String(v.lang || '').replace('_', '-').toLowerCase();
+    const noveltyRe = /^(Eddy|Flo|Grandma|Grandpa|Reed|Rocko|Sandy|Shelley|Albert|Bad News|Bahh|Bells|Boing|Bubbles|Cellos|Good News|Jester|Organ|Superstar|Trinoids|Whisper|Wobble|Zarvox)\b/i;
+
+    const preferredByLang = {
+      en: /Samantha|Ava|Allison|Zoe|Daniel|Karen|Moira|Natural|Enhanced|Premium|Siri/i,
+      es: /Mónica|Monica|Paulina|Jorge|Marisol|Helena|Sabina|Natural|Enhanced|Premium|Siri/i,
+      'zh-CN': /Tingting|Ting-Ting|Xiaoxiao|Yunxi|Lili|Putonghua|Mandarin|普通话|Natural|Enhanced|Premium|Siri/i,
+      'zh-HK': /Sinji|Sin-ji|HiuGaai|HiuMaan|WanLung|Cantonese|Hong Kong|粵|粤|Natural|Enhanced|Premium|Siri/i,
+      it: /Alice|Federica|Luca|Elsa|Cosimo|Natural|Enhanced|Premium|Siri/i,
+      pt: /Luciana|Joana|Francisca|Catarina|Fernanda|Natural|Enhanced|Premium|Siri/i,
+      fr: /Thomas|Amélie|Amelie|Audrey|Aurélie|Aurelie|Denise|Henri|Natural|Enhanced|Premium|Siri/i,
+      de: /Anna|Petra|Markus|Yannick|Katja|Conrad|Hedda|Natural|Enhanced|Premium|Siri/i,
+      ar: /Majed|Maged|Tarik|Laila|Mariam|Salma|Zariyah|Hoda|Naayf|العربية|Arabic|Natural|Enhanced|Premium|Siri/i,
+      ja: /Kyoko|Otoya|O-Ren|Hattori|Nanami|Haruka|Ayumi|Natural|Enhanced|Premium|Siri/i,
+      ko: /Yuna|Sora|Narae|InJoon|SunHi|Heami|Natural|Enhanced|Premium|Siri/i,
+    };
+
+    const scoreVoice = (v, prefRe, exactPrefix) => {
+      let s = 0;
+      const vl = normLang(v);
+      const name = String(v.name || '');
+      if (noveltyRe.test(name)) s -= 100;
+      if (exactPrefix && vl.startsWith(exactPrefix)) s += 25;
+      if (prefRe && prefRe.test(name)) s += 40;
+      if (/Natural|Enhanced|Premium|Siri|Neural/i.test(name)) s += 20;
+      // Prefer local OS human voices over Chrome remote voices so long multi-sentence narration never stalls on network
+      if (v.localService && !noveltyRe.test(name)) s += 15;
+      if (/Google/i.test(name)) s += 10;
+      return s;
+    };
+
+    const pickBest = (candidates, prefRe, exactPrefix = '') => {
+      if (!candidates.length) return null;
+      return candidates
+        .slice()
+        .sort((a, b) => scoreVoice(b, prefRe, exactPrefix) - scoreVoice(a, prefRe, exactPrefix))[0];
+    };
+
     if (lang === 'zh-HK') {
       const cantonese = voices.filter(
-        (v) => /^(yue|zh[-_](HK|MO))/i.test(v.lang) || /Cantonese|Hong Kong|Sin-ji|Sinji|HiuGaai|HiuMaan|WanLung|粵|粤/i.test(v.name)
+        (v) => /^(yue|zh-(hk|mo))/i.test(normLang(v)) || /Cantonese|Hong Kong|Sin-ji|Sinji|HiuGaai|HiuMaan|WanLung|粵|粤/i.test(v.name)
       );
-      if (cantonese.length) return cantonese[0];
-      const trad = voices.filter((v) => /^zh[-_]TW/i.test(v.lang));
-      if (trad.length) return trad[0];
-    } else if (lang === 'zh-CN') {
-      const mandarin = voices.filter(
-        (v) => /^(cmn|zh[-_](CN|SG))/i.test(v.lang) || /Ting-Ting|Tingting|Meijia|Xiaoxiao|Putonghua|Mandarin|普通话/i.test(v.name)
-      );
-      if (mandarin.length) return mandarin[0];
-      const anyZh = voices.filter((v) => /^zh/i.test(v.lang));
-      if (anyZh.length) return anyZh[0];
-    } else if (lang !== 'en') {
-      const prefix = lang.split('-')[0].toLowerCase();
-      const matching = voices.filter((v) => (v.lang || '').toLowerCase().startsWith(prefix));
-      const naturalHit = matching.find((v) => /Google|Natural|Enhanced|Premium|Siri/i.test(v.name));
-      if (naturalHit) return naturalHit;
-      if (matching.length) return matching[0];
-      return null;
+      if (cantonese.length) return pickBest(cantonese, preferredByLang['zh-HK'], 'zh-hk');
+      const trad = voices.filter((v) => /^zh-tw/i.test(normLang(v)) || /Meijia/i.test(v.name));
+      if (trad.length) return pickBest(trad, /Meijia|Natural|Enhanced/i, 'zh-tw');
+      const anyZh = voices.filter((v) => /^(zh|cmn|yue)/i.test(normLang(v)));
+      return pickBest(anyZh, preferredByLang['zh-CN'], 'zh');
     }
 
-    const prefs = [/Google US English/i, /Samantha/i, /Ava/i, /Allison/i, /Zoe/i, /Natural/i, /Enhanced/i, /Premium/i, /Karen/i, /Moira/i, /Daniel/i];
-    const en = voices.filter((v) => /^en[-_]US/i.test(v.lang));
-    const anyEn = voices.filter((v) => /^en/i.test(v.lang));
-    for (const pool of [en, anyEn]) {
-      for (const re of prefs) {
-        const hit = pool.find((v) => re.test(v.name));
-        if (hit) return hit;
-      }
+    if (lang === 'zh-CN') {
+      const mandarin = voices.filter(
+        (v) => /^(cmn|zh-(cn|sg|hans))/i.test(normLang(v)) || /Ting-Ting|Tingting|Xiaoxiao|Putonghua|Mandarin|普通话/i.test(v.name)
+      );
+      if (mandarin.length) return pickBest(mandarin, preferredByLang['zh-CN'], 'zh-cn');
+      const anyZh = voices.filter((v) => /^(zh|cmn)/i.test(normLang(v)));
+      return pickBest(anyZh, preferredByLang['zh-CN'], 'zh');
     }
-    return en[0] || anyEn[0] || voices[0];
+
+    if (lang === 'ar') {
+      const arabic = voices.filter(
+        (v) => /^ar\b/i.test(normLang(v)) || /Majed|Maged|Tarik|Laila|Mariam|Salma|Zariyah|Hoda|Naayf|Arabic|العربية/i.test(v.name)
+      );
+      return pickBest(arabic, preferredByLang.ar, 'ar');
+    }
+
+    if (lang !== 'en') {
+      const prefix = lang.split('-')[0].toLowerCase();
+      const exactBcp = this._getBcp47ForLang().toLowerCase();
+      const matching = voices.filter((v) => normLang(v).startsWith(prefix));
+      return pickBest(matching, preferredByLang[lang], exactBcp);
+    }
+
+    const enVoices = voices.filter((v) => normLang(v).startsWith('en'));
+    return pickBest(enVoices, preferredByLang.en, 'en-us') || voices[0];
   }
 
-  _speakWithDevice(text, notify) {
+  _splitSpeechChunks(text) {
+    const rawSentences = String(text)
+      .split(/(?<=[.!?。！？؛])\s*/)
+      .map((s) => s.trim())
+      .filter(Boolean);
+    const chunks = [];
+    const maxLen = 140;
+    for (const sent of rawSentences) {
+      if (sent.length <= maxLen) {
+        chunks.push(sent);
+      } else {
+        const subParts = sent
+          .split(/(?<=[,，、；;：:–—])\s*/)
+          .map((p) => p.trim())
+          .filter(Boolean);
+        let cur = '';
+        for (const part of subParts) {
+          if (!cur) {
+            cur = part;
+          } else if (cur.length + 1 + part.length <= maxLen) {
+            cur += ' ' + part;
+          } else {
+            chunks.push(cur);
+            cur = part;
+          }
+        }
+        if (cur) chunks.push(cur);
+      }
+    }
+    return chunks.length ? chunks : [String(text).slice(0, maxLen)];
+  }
+
+  _speakWithDevice(text, notify, token = this._narrationToken) {
     if (!('speechSynthesis' in window)) {
       notify(false, 'idle', 'device');
       return;
     }
-    const speak = () => {
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = this._getBcp47ForLang();
-      const voice = this._pickDeviceVoice();
-      if (voice) utterance.voice = voice;
-      utterance.rate = 0.95;
-      utterance.pitch = 1.05;
-      utterance.onstart = () => {
-        this._duck(true);
-        notify(true, 'playing', 'device');
-      };
-      const finish = () => {
-        this._duck(false);
-        notify(false, 'idle', 'device');
-      };
-      utterance.onend = finish;
-      utterance.onerror = finish;
+
+    const startChunkedSpeech = () => {
+      if (token !== this._narrationToken) return;
+      const chunks = this._splitSpeechChunks(text);
+      let voice = this._pickDeviceVoice(false);
+      let idx = 0;
+      let startedAny = false;
+      let retriedLocal = false;
+
       window.speechSynthesis.cancel();
-      window.speechSynthesis.speak(utterance);
+
+      const speakNext = () => {
+        if (token !== this._narrationToken) return;
+        if (idx >= chunks.length) {
+          this._activeUtterance = null;
+          this._duck(false);
+          notify(false, 'idle', 'device');
+          return;
+        }
+
+        const chunkText = chunks[idx];
+        const utterance = new SpeechSynthesisUtterance(chunkText);
+        this._activeUtterance = utterance;
+        if (voice) {
+          utterance.voice = voice;
+          utterance.lang = String(voice.lang || this._getBcp47ForLang()).replace('_', '-');
+        } else {
+          utterance.lang = this._getBcp47ForLang();
+        }
+        utterance.rate = 0.95;
+        utterance.pitch = 1.0;
+
+        utterance.onstart = () => {
+          if (token !== this._narrationToken) return;
+          if (!startedAny) {
+            startedAny = true;
+            this._duck(true);
+            notify(true, 'playing', 'device');
+          }
+        };
+
+        utterance.onend = () => {
+          if (token !== this._narrationToken) return;
+          idx++;
+          speakNext();
+        };
+
+        utterance.onerror = (ev) => {
+          if (token !== this._narrationToken) return;
+          if (ev?.error === 'canceled' || ev?.error === 'interrupted') {
+            return;
+          }
+          // If a remote network voice failed, retry with a local OS voice before advancing
+          if (voice && !voice.localService && !retriedLocal) {
+            retriedLocal = true;
+            const localFallback = this._pickDeviceVoice(true);
+            if (localFallback && localFallback !== voice) {
+              voice = localFallback;
+              speakNext();
+              return;
+            }
+          }
+          idx++;
+          speakNext();
+        };
+
+        try {
+          if (window.speechSynthesis.paused) {
+            window.speechSynthesis.resume();
+          }
+        } catch {
+          /* ignore */
+        }
+        window.speechSynthesis.speak(utterance);
+      };
+
+      // Give the browser speech queue a brief tick after .cancel() so it does not cancel chunk 0
+      this._deviceTimer = setTimeout(speakNext, 45);
     };
+
     if (!window.speechSynthesis.getVoices().length) {
       notify(true, 'loading', 'device');
       let done = false;
@@ -1123,17 +1271,22 @@ export class BioAcousticAudio {
         if (done) return;
         done = true;
         window.speechSynthesis.removeEventListener('voiceschanged', onVoices);
-        speak();
+        startChunkedSpeech();
       };
       window.speechSynthesis.addEventListener('voiceschanged', onVoices);
       setTimeout(onVoices, 600);
     } else {
-      speak();
+      startChunkedSpeech();
     }
   }
 
   stopNarration(onStateChange) {
     this._narrationToken++;
+    this._activeUtterance = null;
+    if (this._deviceTimer) {
+      clearTimeout(this._deviceTimer);
+      this._deviceTimer = null;
+    }
     if (this._narrationAbort) {
       this._narrationAbort.abort();
       this._narrationAbort = null;

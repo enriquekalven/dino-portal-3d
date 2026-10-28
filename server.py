@@ -138,7 +138,7 @@ class ChirpSynthesizer:
         "en": ("en-US", None),
         "es": ("es-ES", "es-ES-Chirp3-HD-Aoede"),
         "zh-CN": ("cmn-CN", "cmn-CN-Chirp3-HD-Aoede"),
-        "zh-HK": ("yue-HK", "yue-HK-Standard-A"),
+        "zh-HK": ("yue-HK", "yue-HK-Chirp3-HD-Aoede"),
         "it": ("it-IT", "it-IT-Chirp3-HD-Aoede"),
         "pt": ("pt-BR", "pt-BR-Chirp3-HD-Aoede"),
         "fr": ("fr-FR", "fr-FR-Chirp3-HD-Aoede"),
@@ -148,18 +148,39 @@ class ChirpSynthesizer:
         "ko": ("ko-KR", "ko-KR-Chirp3-HD-Aoede"),
     }
 
+    @staticmethod
+    def _prepare_chirp_text(text: str, lang: str) -> str:
+        """Ensures sentence lengths stay within Chirp 3 HD limits across CJK and alphabetic scripts."""
+        if lang in ("zh-CN", "zh-HK", "ja"):
+            out = []
+            run = 0
+            for ch in text:
+                run += 1
+                if ch in "。！？":
+                    out.append(ch + "\n")
+                    run = 0
+                elif ch in ".!?":
+                    out.append(ch)
+                    run = 0
+                elif ch in "，；;：" and run >= 38:
+                    out.append("。\n")
+                    run = 0
+                else:
+                    out.append(ch)
+            return "".join(out)
+        return text
+
     def synthesize(self, text: str, voice: str, rate: float, lang: str = "en"):
         """Returns (status_code, payload_bytes_or_error_dict, content_type)."""
-        lang_code, default_lang_voice = self.LANG_VOICE_MAP.get(lang, ("en-US", None))
+        lang_code, default_lang_voice = self.LANG_VOICE_MAP.get(lang, ("en-US", "en-US-Chirp3-HD-Aoede"))
         persona = voice.split("-")[-1] if "-" in voice else "Aoede"
-        if lang == "en" or not default_lang_voice:
+        if voice.startswith(f"{lang_code}-"):
             resolved_voice = voice
-        elif lang == "zh-HK":
-            resolved_voice = default_lang_voice
         else:
             resolved_voice = f"{lang_code}-Chirp3-HD-{persona}"
 
-        key = hashlib.sha256(f"{lang_code}|{resolved_voice}|{rate:.2f}|{text}".encode("utf-8")).hexdigest()
+        prepared_text = self._prepare_chirp_text(text, lang)
+        key = hashlib.sha256(f"{lang_code}|{resolved_voice}|{rate:.2f}|{prepared_text}".encode("utf-8")).hexdigest()
         with self._cache_lock:
             cached = self._cache.get(key)
             if cached is not None:
@@ -170,12 +191,12 @@ class ChirpSynthesizer:
             return 429, {"error": "rate_limited"}, "application/json"
 
         body = {
-            "input": {"text": text},
+            "input": {"text": prepared_text},
             "voice": {"languageCode": lang_code, "name": resolved_voice},
             "audioConfig": {"audioEncoding": "MP3", "speakingRate": rate},
         }
         audio = self._request(body)
-        if isinstance(audio, dict) and lang != "en":
+        if isinstance(audio, dict):
             # Fallback to standard language voice if Chirp3-HD persona is unavailable in that region
             fallback_body = {
                 "input": {"text": text},

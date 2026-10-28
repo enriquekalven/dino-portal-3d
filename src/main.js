@@ -1,7 +1,7 @@
-import { ERAS, SPECIES, QUIZ_QUESTIONS } from './data/dinosaurs.js';
-import { DinoWorldEngine } from './engine/DinoWorldEngine.js';
-import { renderContinentalDriftTexture } from './engine/HyperRealKit.js';
-import { BioAcousticAudio, CHIRP_VOICE_PRESETS } from './engine/BioAcousticAudio.js';
+import { ERAS, SPECIES, QUIZ_QUESTIONS } from './data/dinosaurs.js?v=20261028c';
+import { DinoWorldEngine } from './engine/DinoWorldEngine.js?v=20261028c';
+import { renderContinentalDriftTexture } from './engine/HyperRealKit.js?v=20261028c';
+import { BioAcousticAudio, CHIRP_VOICE_PRESETS } from './engine/BioAcousticAudio.js?v=20261028c';
 import {
   SUPPORTED_LANGUAGES,
   resolveSupportedLang,
@@ -10,9 +10,9 @@ import {
   getLocalizedDriftDescription,
   IMPACT_STAGE_LOCALIZATIONS,
   QUIZ_LOCALIZATIONS,
-} from './i18n/locales.js';
-import { getLocalizedSpecies } from './i18n/speciesLocales.js';
-import { initCookieConsent } from './consent.js';
+} from './i18n/locales.js?v=20261028c';
+import { getLocalizedSpecies } from './i18n/speciesLocales.js?v=20261028c';
+import { initCookieConsent } from './consent.js?v=20261028c';
 
 /**
  * main.js — Safe DOM Controller for DinoVerse 3D (9-Language Internationalized Edition).

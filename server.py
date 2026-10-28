@@ -403,11 +403,14 @@ class SecureStaticHandler(SimpleHTTPRequestHandler):
         if status != 200:
             self._send_json(status, body)
             return
+        lang_code, _ = SYNTH.LANG_VOICE_MAP.get(lang, ("en-US", "en-US-Chirp3-HD-Aoede"))
+        persona = voice.split("-")[-1] if "-" in voice else "Aoede"
+        resolved_voice = voice if voice.startswith(f"{lang_code}-") else f"{lang_code}-Chirp3-HD-{persona}"
         self.send_response(200)
         self.send_header("Content-Type", mime)
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "private, max-age=3600")
-        self.send_header("X-Narrator-Voice", voice)
+        self.send_header("X-Narrator-Voice", resolved_voice)
         self.end_headers()
         self.wfile.write(body)
 

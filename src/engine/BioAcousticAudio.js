@@ -1091,22 +1091,23 @@ export class BioAcousticAudio {
     const scoreVoice = (v, prefRe, exactPrefix) => {
       let s = 0;
       const vl = normLang(v);
-      const name = String(v.name || '');
-      if (noveltyRe.test(name)) s -= 100;
+      const name = String(v.name || '').normalize('NFC');
+      const uri = String(v.voiceURI || '').normalize('NFC');
+      if (noveltyRe.test(name) || /eloquence/i.test(uri)) s -= 120;
       if (exactPrefix && vl.startsWith(exactPrefix)) s += 25;
       if (prefRe && prefRe.test(name)) s += 40;
-      if (/Natural|Enhanced|Premium|Siri|Neural/i.test(name)) s += 20;
-      // Prefer local OS human voices over Chrome remote voices so long multi-sentence narration never stalls on network
+      if (/Natural|Enhanced|Premium|Siri|Neural/i.test(name)) s += 25;
+      if (!preferLocalOnly && /^Google\b/i.test(name)) s += 65;
       if (v.localService && !noveltyRe.test(name)) s += 15;
-      if (/Google/i.test(name)) s += 10;
+      if (/super-compact/i.test(uri)) s += 12;
       return s;
     };
 
     const pickBest = (candidates, prefRe, exactPrefix = '') => {
       if (!candidates.length) return null;
       return candidates
-        .slice()
-        .sort((a, b) => scoreVoice(b, prefRe, exactPrefix) - scoreVoice(a, prefRe, exactPrefix))[0];
+        .map((v, idx) => ({ v, idx, score: scoreVoice(v, prefRe, exactPrefix) }))
+        .sort((a, b) => (b.score !== a.score ? b.score - a.score : b.idx - a.idx))[0].v;
     };
 
     if (lang === 'zh-HK') {

@@ -1,0 +1,574 @@
+/* ==========================================================================
+ * Atlas of Wonder Family — Universal Seasonal & Global Holiday Engine (CSS)
+ * Strict CSP safe: zero external assets, zero inline styles, Day & Night
+ * adaptive, RTL logical properties, and prefers-reduced-motion compliant.
+ * ========================================================================== */
+
+:root {
+  --aow-s-accent: #f59e0b;
+  --aow-s-accent-2: #ea580c;
+  --aow-s-accent-day: #b45309;
+  --aow-s-soft: rgba(245, 158, 11, 0.16);
+  --aow-s-border: rgba(245, 158, 11, 0.42);
+  --aow-s-on-accent: #180d04;
+  --aow-s-orb-1: rgba(245, 158, 11, 0.11);
+  --aow-s-orb-2: rgba(220, 38, 38, 0.08);
+  --aow-s-strip: linear-gradient(90deg, #b45309 0%, #f59e0b 50%, #dc2626 100%);
+}
+
+:root[data-season="spring"] {
+  --aow-s-accent: #f472b6;
+  --aow-s-accent-2: #34d399;
+  --aow-s-accent-day: #be185d;
+  --aow-s-soft: rgba(244, 114, 182, 0.16);
+  --aow-s-border: rgba(244, 114, 182, 0.42);
+  --aow-s-on-accent: #1d0611;
+  --aow-s-orb-1: rgba(244, 114, 182, 0.11);
+  --aow-s-orb-2: rgba(52, 211, 153, 0.09);
+  --aow-s-strip: linear-gradient(90deg, #db2777 0%, #f472b6 50%, #10b981 100%);
+}
+
+:root[data-season="summer"] {
+  --aow-s-accent: #2dd4bf;
+  --aow-s-accent-2: #fbbf24;
+  --aow-s-accent-day: #0f766e;
+  --aow-s-soft: rgba(45, 212, 191, 0.16);
+  --aow-s-border: rgba(45, 212, 191, 0.42);
+  --aow-s-on-accent: #041b18;
+  --aow-s-orb-1: rgba(45, 212, 191, 0.11);
+  --aow-s-orb-2: rgba(251, 191, 36, 0.1);
+  --aow-s-strip: linear-gradient(90deg, #0d9488 0%, #fbbf24 55%, #fb7185 100%);
+}
+
+:root[data-season="fall"],
+:root[data-season="thanksgiving"],
+:root[data-season="indigenous-peoples-day"] {
+  --aow-s-accent: #f59e0b;
+  --aow-s-accent-2: #ea580c;
+  --aow-s-accent-day: #b45309;
+  --aow-s-soft: rgba(245, 158, 11, 0.17);
+  --aow-s-border: rgba(245, 158, 11, 0.45);
+  --aow-s-on-accent: #1a0d04;
+  --aow-s-orb-1: rgba(245, 158, 11, 0.12);
+  --aow-s-orb-2: rgba(220, 38, 38, 0.09);
+  --aow-s-strip: linear-gradient(90deg, #b45309 0%, #ea580c 50%, #dc2626 100%);
+}
+
+:root[data-season="winter"] {
+  --aow-s-accent: #7dd3fc;
+  --aow-s-accent-2: #a78bfa;
+  --aow-s-accent-day: #0369a1;
+  --aow-s-soft: rgba(125, 211, 252, 0.16);
+  --aow-s-border: rgba(125, 211, 252, 0.42);
+  --aow-s-on-accent: #061523;
+  --aow-s-orb-1: rgba(125, 211, 252, 0.12);
+  --aow-s-orb-2: rgba(167, 139, 250, 0.1);
+  --aow-s-strip: linear-gradient(90deg, #0284c7 0%, #7dd3fc 50%, #8b5cf6 100%);
+}
+
+:root[data-season="lunar-new-year"],
+:root[data-season="mid-autumn"] {
+  --aow-s-accent: #fbbf24;
+  --aow-s-accent-2: #ef4444;
+  --aow-s-accent-day: #b91c1c;
+  --aow-s-soft: rgba(251, 191, 36, 0.17);
+  --aow-s-border: rgba(251, 191, 36, 0.46);
+  --aow-s-on-accent: #1f0905;
+  --aow-s-orb-1: rgba(239, 68, 68, 0.13);
+  --aow-s-orb-2: rgba(251, 191, 36, 0.12);
+  --aow-s-strip: linear-gradient(90deg, #991b1b 0%, #ef4444 50%, #fbbf24 100%);
+}
+
+:root[data-season="holi"] {
+  --aow-s-accent: #f472b6;
+  --aow-s-accent-2: #22d3ee;
+  --aow-s-accent-day: #be185d;
+  --aow-s-soft: rgba(244, 114, 182, 0.17);
+  --aow-s-border: rgba(244, 114, 182, 0.45);
+  --aow-s-on-accent: #1d0614;
+  --aow-s-orb-1: rgba(244, 63, 94, 0.13);
+  --aow-s-orb-2: rgba(6, 182, 212, 0.12);
+  --aow-s-strip: linear-gradient(90deg, #f43f5e 0%, #facc15 35%, #10b981 70%, #8b5cf6 100%);
+}
+
+:root[data-season="diwali"] {
+  --aow-s-accent: #fbbf24;
+  --aow-s-accent-2: #ec4899;
+  --aow-s-accent-day: #b45309;
+  --aow-s-soft: rgba(251, 191, 36, 0.17);
+  --aow-s-border: rgba(251, 191, 36, 0.46);
+  --aow-s-on-accent: #1d0f04;
+  --aow-s-orb-1: rgba(251, 191, 36, 0.13);
+  --aow-s-orb-2: rgba(236, 72, 153, 0.11);
+  --aow-s-strip: linear-gradient(90deg, #9333ea 0%, #ec4899 50%, #fbbf24 100%);
+}
+
+:root[data-season="halloween"] {
+  --aow-s-accent: #fb923c;
+  --aow-s-accent-2: #c084fc;
+  --aow-s-accent-day: #c2410c;
+  --aow-s-soft: rgba(251, 146, 60, 0.17);
+  --aow-s-border: rgba(251, 146, 60, 0.46);
+  --aow-s-on-accent: #1c0b04;
+  --aow-s-orb-1: rgba(249, 115, 22, 0.13);
+  --aow-s-orb-2: rgba(168, 85, 247, 0.13);
+  --aow-s-strip: linear-gradient(90deg, #ea580c 0%, #9333ea 60%, #84cc16 100%);
+}
+
+:root[data-season="christmas"] {
+  --aow-s-accent: #34d399;
+  --aow-s-accent-2: #f87171;
+  --aow-s-accent-day: #047857;
+  --aow-s-soft: rgba(52, 211, 153, 0.16);
+  --aow-s-border: rgba(52, 211, 153, 0.44);
+  --aow-s-on-accent: #041b12;
+  --aow-s-orb-1: rgba(220, 38, 38, 0.11);
+  --aow-s-orb-2: rgba(16, 185, 129, 0.11);
+  --aow-s-strip: linear-gradient(90deg, #dc2626 0%, #059669 55%, #fbbf24 100%);
+}
+
+:root[data-season="new-year"],
+:root[data-season="mlk-day"],
+:root[data-season="labor-day"],
+:root[data-season="fathers-day"] {
+  --aow-s-accent: #fbbf24;
+  --aow-s-accent-2: #818cf8;
+  --aow-s-accent-day: #a16207;
+  --aow-s-soft: rgba(251, 191, 36, 0.16);
+  --aow-s-border: rgba(251, 191, 36, 0.42);
+  --aow-s-on-accent: #191104;
+  --aow-s-orb-1: rgba(251, 191, 36, 0.11);
+  --aow-s-orb-2: rgba(129, 140, 248, 0.11);
+  --aow-s-strip: linear-gradient(90deg, #d97706 0%, #fbbf24 50%, #6366f1 100%);
+}
+
+:root[data-season="independence-day"],
+:root[data-season="memorial-day"],
+:root[data-season="veterans-day"],
+:root[data-season="presidents-day"] {
+  --aow-s-accent: #60a5fa;
+  --aow-s-accent-2: #f87171;
+  --aow-s-accent-day: #1d4ed8;
+  --aow-s-soft: rgba(96, 165, 250, 0.16);
+  --aow-s-border: rgba(96, 165, 250, 0.44);
+  --aow-s-on-accent: #061226;
+  --aow-s-orb-1: rgba(59, 130, 246, 0.12);
+  --aow-s-orb-2: rgba(239, 68, 68, 0.11);
+  --aow-s-strip: linear-gradient(90deg, #1d4ed8 0%, #f8fafc 50%, #dc2626 100%);
+}
+
+:root[data-season="juneteenth"] {
+  --aow-s-accent: #fbbf24;
+  --aow-s-accent-2: #34d399;
+  --aow-s-accent-day: #b91c1c;
+  --aow-s-soft: rgba(251, 191, 36, 0.16);
+  --aow-s-border: rgba(251, 191, 36, 0.44);
+  --aow-s-on-accent: #1c1004;
+  --aow-s-orb-1: rgba(239, 68, 68, 0.11);
+  --aow-s-orb-2: rgba(16, 185, 129, 0.11);
+  --aow-s-strip: linear-gradient(90deg, #dc2626 0%, #fbbf24 50%, #10b981 100%);
+}
+
+:root[data-season="valentines"],
+:root[data-season="mothers-day"],
+:root[data-season="easter"] {
+  --aow-s-accent: #fb7185;
+  --aow-s-accent-2: #c084fc;
+  --aow-s-accent-day: #be123c;
+  --aow-s-soft: rgba(251, 113, 133, 0.16);
+  --aow-s-border: rgba(251, 113, 133, 0.44);
+  --aow-s-on-accent: #21060c;
+  --aow-s-orb-1: rgba(244, 63, 94, 0.12);
+  --aow-s-orb-2: rgba(192, 132, 252, 0.1);
+  --aow-s-strip: linear-gradient(90deg, #e11d48 0%, #fb7185 50%, #a855f7 100%);
+}
+
+:root[data-season="st-patricks"] {
+  --aow-s-accent: #34d399;
+  --aow-s-accent-2: #fbbf24;
+  --aow-s-accent-day: #047857;
+  --aow-s-soft: rgba(52, 211, 153, 0.16);
+  --aow-s-border: rgba(52, 211, 153, 0.44);
+  --aow-s-on-accent: #041c12;
+  --aow-s-orb-1: rgba(16, 185, 129, 0.12);
+  --aow-s-orb-2: rgba(251, 191, 36, 0.1);
+  --aow-s-strip: linear-gradient(90deg, #059669 0%, #34d399 55%, #fbbf24 100%);
+}
+
+/* ---------- Ambient Accent Strip, Aura & Sky Canvas ---------- */
+
+.aow-season-topstrip {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: var(--aow-s-strip);
+  pointer-events: none;
+  z-index: 9996;
+}
+
+.aow-season-aura {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  background:
+    radial-gradient(circle at 8% 8%, var(--aow-s-orb-1) 0%, transparent 42%),
+    radial-gradient(circle at 92% 90%, var(--aow-s-orb-2) 0%, transparent 42%);
+}
+
+.aow-season-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9995;
+}
+
+.aow-season-canvas[data-calm="true"] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aow-season-canvas {
+    display: none;
+  }
+}
+
+/* ---------- Floating Seasonal Greeting & Time-Machine Dock ---------- */
+
+.aow-season-dock {
+  --dock-bg: rgba(15, 20, 32, 0.88);
+  --dock-surface: rgba(255, 255, 255, 0.06);
+  --dock-ink: #f8fafc;
+  --dock-muted: #cbd5e1;
+  --dock-rule: rgba(255, 255, 255, 0.14);
+  --dock-accent: var(--aow-s-accent);
+  --dock-on-accent: var(--aow-s-on-accent);
+
+  position: fixed;
+  bottom: max(14px, env(safe-area-inset-bottom, 0px) + 10px);
+  inset-inline-end: 14px;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  max-width: calc(100vw - 28px);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  line-height: 1.35;
+}
+
+.aow-season-dock[data-pos="above-footer"] {
+  bottom: max(76px, env(safe-area-inset-bottom, 0px) + 72px);
+}
+
+.aow-season-dock[data-surface="day"] {
+  --dock-bg: rgba(255, 252, 246, 0.94);
+  --dock-surface: rgba(15, 23, 42, 0.045);
+  --dock-ink: #1e293b;
+  --dock-muted: #475569;
+  --dock-rule: rgba(15, 23, 42, 0.14);
+  --dock-accent: var(--aow-s-accent-day);
+  --dock-on-accent: #ffffff;
+}
+
+.aow-season-bar {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 7px;
+  border: 1px solid var(--aow-s-border);
+  border-radius: 999px;
+  background: var(--dock-bg);
+  color: var(--dock-ink);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.32);
+}
+
+.aow-season-trigger {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--aow-s-border);
+  border-radius: 999px;
+  background: var(--aow-s-soft);
+  color: var(--dock-ink);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.aow-season-greeting {
+  max-width: min(260px, 48vw);
+  overflow: hidden;
+  padding-inline: 4px;
+  color: var(--dock-muted);
+  font-size: 12px;
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.aow-season-greeting[hidden] {
+  display: none !important;
+}
+
+.aow-season-celebrate {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-height: 28px;
+  padding: 0 10px;
+  border: 0;
+  border-radius: 999px;
+  background: var(--dock-accent);
+  color: var(--dock-on-accent);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.aow-season-collapse {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--dock-muted);
+  font: inherit;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.aow-season-collapse[hidden] {
+  display: none !important;
+}
+
+/* ---------- Popover Menu ---------- */
+
+.aow-season-popover {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  width: min(352px, calc(100vw - 28px));
+  padding: 13px;
+  border: 1px solid var(--aow-s-border);
+  border-radius: 16px;
+  background: var(--dock-bg);
+  color: var(--dock-ink);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 22px 54px rgba(0, 0, 0, 0.45);
+}
+
+.aow-season-popover[hidden] {
+  display: none !important;
+}
+
+.aow-season-auto {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  width: 100%;
+  padding: 9px 11px;
+  border: 1px solid var(--dock-rule);
+  border-radius: 11px;
+  background: var(--dock-surface);
+  color: var(--dock-ink);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.aow-season-auto[aria-pressed="true"] {
+  border-color: var(--dock-accent);
+  background: var(--aow-s-soft);
+}
+
+.aow-season-auto__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  font-weight: 750;
+}
+
+.aow-season-auto__now {
+  padding: 1px 8px;
+  border: 1px solid var(--aow-s-border);
+  border-radius: 999px;
+  color: var(--dock-accent);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.aow-season-auto__sub {
+  color: var(--dock-muted);
+  font-size: 11px;
+}
+
+.aow-season-heading {
+  margin: 0;
+  color: var(--dock-muted);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.aow-season-four {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 5px;
+}
+
+.aow-season-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-height: 48px;
+  padding: 5px 3px;
+  border: 1px solid var(--dock-rule);
+  border-radius: 10px;
+  background: var(--dock-surface);
+  color: var(--dock-ink);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.aow-season-chip[aria-pressed="true"] {
+  border-color: var(--dock-accent);
+  background: var(--aow-s-soft);
+  color: var(--dock-accent);
+}
+
+.aow-season-chip__emoji {
+  font-size: 16px;
+  line-height: 1.1;
+}
+
+.aow-season-holidays {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 5px;
+  max-height: 196px;
+  overflow-y: auto;
+  padding-inline-end: 2px;
+}
+
+.aow-season-holiday {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  min-height: 38px;
+  padding: 5px 8px;
+  border: 1px solid var(--dock-rule);
+  border-radius: 9px;
+  background: var(--dock-surface);
+  color: var(--dock-ink);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.aow-season-holiday[aria-pressed="true"] {
+  border-color: var(--dock-accent);
+  background: var(--aow-s-soft);
+}
+
+.aow-season-holiday__emoji {
+  flex: none;
+  font-size: 15px;
+}
+
+.aow-season-holiday__meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.aow-season-holiday__name {
+  overflow: hidden;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.aow-season-holiday__date {
+  overflow: hidden;
+  color: var(--dock-muted);
+  font-size: 10px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.aow-season-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding-top: 7px;
+  border-top: 1px solid var(--dock-rule);
+}
+
+.aow-season-calm {
+  min-height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--dock-rule);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--dock-muted);
+  font: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.aow-season-trigger:focus-visible,
+.aow-season-celebrate:focus-visible,
+.aow-season-collapse:focus-visible,
+.aow-season-auto:focus-visible,
+.aow-season-chip:focus-visible,
+.aow-season-holiday:focus-visible,
+.aow-season-calm:focus-visible {
+  outline: 2px solid var(--dock-accent);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .aow-season-greeting {
+    display: none;
+  }
+  .aow-season-collapse {
+    display: none;
+  }
+}
+
+@media print {
+  .aow-season-topstrip,
+  .aow-season-aura,
+  .aow-season-canvas,
+  .aow-season-dock {
+    display: none !important;
+  }
+}
